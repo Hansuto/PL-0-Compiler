@@ -10,9 +10,9 @@ Chris Taliaferro - ch119541
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "lexical.c"
-#include "parser.c"
-#include "vm.c"
+#include "lexical.h"
+//#include "parser.c"
+#include "vm.h"
 
 int main(int argc, char* argv[])
 {
@@ -20,7 +20,7 @@ int main(int argc, char* argv[])
     int lexerFlag = 0, parserFlag = 0, vmFlag = 0;
     char inputFile[10];
 
-    strcpy(inputFile, argv[0]); 
+    strcpy(inputFile, argv[1]); 
 
     for(i = 1; i < argc; i++)
     {
@@ -34,8 +34,8 @@ int main(int argc, char* argv[])
 
     if (lexerFlag)
         lexer(inputFile);
-    if (parserFlag)
-        parser(inputFile);
+//    if (parserFlag)
+//        parser(inputFile);
     if (vmFlag)
         vm(inputFile);
 

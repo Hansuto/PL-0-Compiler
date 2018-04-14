@@ -10,6 +10,7 @@ Chris Taliaferro - ch119541
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "lexical.h"
 
 #define identMax 11
 #define numMax 5
@@ -90,6 +91,49 @@ typedef enum {
     assignmentsym = 37,
     ignoreUntilWhiteSpace = 1000
 } token_type;
+
+// Symbolic Representation
+const char *symbolRep[ ] = {
+    "start",
+    "nulsym",
+    "identsym",
+    "numbersym",
+    "plussym",
+    "minussym",
+    "multsym",
+    "slashsym",
+    "oddsym",
+    "eqlsym",
+    "neqsym",
+    "lessym",
+    "leqsym",
+    "gtrsym",
+    "geqsym",
+    "lparentsym",
+    "rparentsym",
+    "commasym",
+    "semicolonsym",
+    "periodsym",
+    "becomessym",
+    "beginsym",
+    "endsym",
+    "ifsym",
+    "thensym",
+    "whilesym",
+    "dosym",
+    "callsym",
+    "constsym",
+    "varsym",
+    "procsym",
+    "writesym",
+    "readsym",
+    "elsesym",
+    "linecommentsym",
+    "multilinecommentstartsym",
+    "multilinecommentendsym",
+    "assignmentsym",
+    "ignoreUntilWhiteSpace"
+};
 
 //reserved words
 const char *reservedWord[ ] = {
@@ -515,20 +559,24 @@ int getCodeFromFile(FILE* file) {
 }
 
 int lexer(char * file) {
+
+    printf("-------------------------------------------\n");
+    printf("LIST OF LEXEMES/TOKENS:\n\n");
+
     FILE *ifp = fopen(file, "r");
 
     int codeLength = getCodeFromFile(ifp);
 
     fclose(ifp);
     
-    printCodeOfSize(codeLength, file);
+//    printCodeOfSize(codeLength, file);
 
     performLexAnalysis(codeArray);
 
     if (!encounteredError) {
-        printLexTable();
+//        printLexTable();
         
-        printf("\nLexeme List:\n");
+        printf("Internal Representation:\n");
         for(g = 0 ; g < currentTokenIndex ; g++) {
             token_t tokenToTest = tokenList[g];
             
@@ -536,9 +584,18 @@ int lexer(char * file) {
             if (tokenToTest.class <= 3)
                 printf("%s ", tokenToTest.lexeme);
         }
+
+        printf("\n\nSymbolic Representation:\n");
+        for(g = 0 ; g < currentTokenIndex ; g++) {
+            token_t tokenToTest = tokenList[g];
+            
+            printf("%s ", symbolRep[tokenToTest.class]);
+            if (tokenToTest.class <= 3)
+                printf("%s ", tokenToTest.lexeme);
+        }
+
         printf("\n");
     }
 
     return 0;
 }
-

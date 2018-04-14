@@ -9,6 +9,7 @@ Chris Taliaferro - ch119541
 
 #include <stdio.h> 
 #include <stdlib.h>
+#include "vm.h"
 
 #define NUM_REGISTERS 8
 #define MAX_LEXI_LEVELS 3
