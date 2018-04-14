@@ -4,7 +4,7 @@ COMPILATION COMMANDS
 ---------------------
 gcc -o compile driver.c lexical.c parser.c vm.c
 
-./compile (filename) -l -a -v
+./compile filename.txt -l -a -v
 
 ---------------------
 
