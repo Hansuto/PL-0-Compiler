@@ -931,17 +931,8 @@ int parse(char * file)
     tokenUpdated = fopen("tokenUpdated.txt", "w");
     errorFile = fopen("error.txt", "w");
 
-    if (inFile == NULL)
-        printf("Couldn't read input file. Make sure it's called 'symlexListOut.txt'\n");
-    if (outFile == NULL)
-        printf("Couldn't write to output file. Make sure it's called 'parseOutput.txt'\n");
-    if (tokenUpdated == NULL)
-        printf("Couldn't write to tokenFile. Make sure it's called 'tokenUpdated.txt'\n");
-    if (errorFile == NULL)
-        printf("Couldn't write to errorFile. Make sure it's called 'error.txt'\n");
-
     convert();
-	program();
+    program();
 
     if (errorFlag == 1)
         exit(0);
