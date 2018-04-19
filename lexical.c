@@ -11,10 +11,14 @@ Chris Taliaferro - ch119541
 #include <stdlib.h>
 #include <string.h>
 #include "lexical.h"
+#include "state.h"
 
 #define identMax 11
 #define numMax 5
 #define MAX_CODE_SIZE 2000
+
+    FILE *ifp;
+    FILE *ofp;
 
 //token struct
 typedef struct {
@@ -49,48 +53,7 @@ char specialSymbols[] = {
     ':'
 };
 
-//state values
-typedef enum {
-    start = 0,
-    nulsym = 1,
-    identsym = 2,
-    numbersym = 3,
-    plussym = 4,
-    minussym = 5,
-    multsym = 6,
-    slashsym = 7,
-    oddsym = 8,
-    eqlsym = 9,
-    neqsym = 10,
-    lessym = 11,
-    leqsym = 12,
-    gtrsym = 13,
-    geqsym = 14,
-    lparentsym = 15,
-    rparentsym = 16,
-    commasym = 17,
-    semicolonsym = 18,
-    periodsym = 19,
-    becomessym = 20,
-    beginsym = 21,
-    endsym = 22,
-    ifsym = 23,
-    thensym = 24,
-    whilesym = 25,
-    dosym = 26,
-    callsym = 27,
-    constsym = 28,
-    varsym = 29,
-    procsym = 30,
-    writesym = 31,
-    readsym = 32,
-    elsesym = 33,
-    linecommentsym = 34,
-    multilinecommentstartsym = 35,
-    multilinecommentendsym = 36,
-    assignmentsym = 37,
-    ignoreUntilWhiteSpace = 1000
-} token_type;
+
 
 // Symbolic Representation
 const char *symbolRep[ ] = {
@@ -114,7 +77,7 @@ const char *symbolRep[ ] = {
     "commasym",
     "semicolonsym",
     "periodsym",
-    "becomessym",
+    "becomesym",
     "beginsym",
     "endsym",
     "ifsym",
@@ -235,10 +198,10 @@ void printToken(token_t tokenToPrint) {
 
 void printLexTable() {
     int i;
-    
+
     printf("\nLexeme Table:\n");
     printf("lexeme\t\ttoken type\n");
-    
+
     for(i = 0 ; i < currentTokenIndex ; i++) {
         printToken(tokenList[i]);
     }
@@ -251,10 +214,10 @@ void appendTokenToTokenList(token_t tokenToAdd) {
 void resetToken(token_t *token) {
     int i;
     lex[g++] = token->class;
-    
+
     if(token->class == identsym || token->class == numbersym)
         lex[g++] = token->lexeme[0];
-    
+
     //reset the token
     for(i = 0; i < 11; i++)
         token->lexeme[i] = '\0';
@@ -440,7 +403,7 @@ void performLexAnalysis(char code[]) {
             case semicolonsym:
             case periodsym:
 
-            case becomessym:
+            case becomesym:
                 token.class = state;
                 appendTokenToTokenList(token);
                 resetToken(&token);
@@ -493,7 +456,7 @@ void performLexAnalysis(char code[]) {
                 // ":=" is the only valid following sequence
                 if(currentChar == '=') {
                     token.lexeme[strlen(token.lexeme)] = currentChar;
-                    state = becomessym;
+                    state = becomesym;
                 } else {
                     encounteredError = 1;
                     printf("Error: Invalid symbol.");
@@ -520,14 +483,14 @@ void performLexAnalysis(char code[]) {
 
 void printCodeOfSize(int size, char *withName) {
     int i;
-    
+
     printf("Source Program:%s\n", withName);
     for(i = 0; i < size; i++)
         printf("%c", codeArray[i]);
-    
+
     for(i = 0; i < size; i++)
         if(codeArray[i] == '\t' || codeArray[i] == '\r') codeArray[i] = ' ';
-    
+
     printf("\n");
 }
 
@@ -536,8 +499,8 @@ int getCodeFromFile(FILE* file) {
     int codeSize = 0;
     // The current way we're scanning (no_comment, singleline, multiline)
     comment_type scanningType = nocomment;
-    
-    while(fscanf(file, "%c", &temp) != EOF) {
+
+    while(fscanf(ifp, "%c", &temp) != EOF) {
         // If we have no comment, check if a comment was made. If not, store the character.
         if (scanningType == nocomment) {
             if (previousCharacter == '/' && temp == '*') {
@@ -551,10 +514,10 @@ int getCodeFromFile(FILE* file) {
                 scanningType = nocomment;
             }
         }
-        
+
         previousCharacter = temp;
     }
-    
+
     return codeSize;
 }
 
@@ -563,23 +526,24 @@ int lexer(char * file) {
     printf("-------------------------------------------\n");
     printf("LIST OF LEXEMES/TOKENS:\n\n");
 
-    FILE *ifp = fopen(file, "r");
+    ifp = fopen(file, "r");
+    ofp = fopen("lexoutput.txt", "w");
 
     int codeLength = getCodeFromFile(ifp);
 
     fclose(ifp);
-    
+
 //    printCodeOfSize(codeLength, file);
 
     performLexAnalysis(codeArray);
 
     if (!encounteredError) {
 //        printLexTable();
-        
+
         printf("Internal Representation:\n");
         for(g = 0 ; g < currentTokenIndex ; g++) {
             token_t tokenToTest = tokenList[g];
-            
+
             printf("%d ", tokenToTest.class);
             if (tokenToTest.class <= 3)
                 printf("%s ", tokenToTest.lexeme);
@@ -588,14 +552,16 @@ int lexer(char * file) {
         printf("\n\nSymbolic Representation:\n");
         for(g = 0 ; g < currentTokenIndex ; g++) {
             token_t tokenToTest = tokenList[g];
-            
+
             printf("%s ", symbolRep[tokenToTest.class]);
-            if (tokenToTest.class <= 3)
+            fprintf(ofp, "%s ", symbolRep[tokenToTest.class]);
+            if (tokenToTest.class <= 3){
                 printf("%s ", tokenToTest.lexeme);
+                fprintf(ofp, "%s ", tokenToTest.lexeme);
+            }
+
         }
-
-        printf("\n");
     }
-
+    fclose(ofp);
     return 0;
 }

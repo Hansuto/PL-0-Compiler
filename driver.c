@@ -11,7 +11,7 @@ Chris Taliaferro - ch119541
 #include <stdlib.h>
 #include <string.h>
 #include "lexical.h"
-//#include "parser.c"
+#include "parser.h"
 #include "vm.h"
 
 int main(int argc, char* argv[])
@@ -20,7 +20,7 @@ int main(int argc, char* argv[])
     int lexerFlag = 0, parserFlag = 0, vmFlag = 0;
     char inputFile[10];
 
-    strcpy(inputFile, argv[1]); 
+    strcpy(inputFile, argv[1]);
 
     for(i = 1; i < argc; i++)
     {
@@ -34,10 +34,10 @@ int main(int argc, char* argv[])
 
     if (lexerFlag)
         lexer(inputFile);
-//    if (parserFlag)
-//        parser(inputFile);
+    if (parserFlag)
+        parse("lexoutput.txt");
     if (vmFlag)
-        vm(inputFile);
+        vm("parseOutput.txt");
 
     return 0;
 }
