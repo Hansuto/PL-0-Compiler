@@ -13,7 +13,7 @@ Chris Taliaferro - ch119541
 // Some initial values and global variables
 symbol symbolTable[MAX_SYMBOL_TABLE_SIZE];
 instruction code[MAX_CODE_LENGTH];
-tokenType tokenArray[MAX_CODE_LENGTH];
+tokenType tokens[MAX_CODE_LENGTH];
 
 tokenType token;
 int symVal = 0;         // symbolTable[]
@@ -27,9 +27,9 @@ int spaceOffset = 4;    // startin point for symbol table
 int lexLevel = 0;       // keep track of current lex level--
                         // --increase when enter Block and decrease when exit it
 
-FILE *inFile;
-FILE *outFile;
-FILE *tokenUpdated;
+FILE *inputFile;
+FILE *outputFile;
+FILE *updatedToken;
 FILE *errorFile;
 
 // Function prototypes
@@ -42,7 +42,7 @@ void term();
 void factor();
 void getNextToken();
 void printTokens(int, int);
-void emit(int, int, int);
+void generate(int, int, int);
 void errorMessage();
 void convert();
 void getTokenType(char*, int);
@@ -51,7 +51,7 @@ void printCode();
 // Gets the next token
 void getNextToken()
 {
-    token = tokenArray[tokenVal];
+    token = tokens[tokenVal];
     // printf("NAME: %s \tTYPE: %d \tSYMBOL: %s \tCOUNT: %d \n",tokenArray[tokenVal].name, tokenArray[tokenVal].type, tokenArray[tokenVal].symbol, tokenVal);
 	tokenVal++;
 }
@@ -68,15 +68,15 @@ void program()
         errorFlag = 1;
     }
 
-    emit(9,0,3);      // End program
+    generate(9,0,3);      // End program
 }
 
 void block()
 {
-    int jmpaddr = cx;
+    int jumpAddress = cx;
     int varCounter = 0;
     lexLevel++;
-    emit(7,0,0);
+    generate(7,0,0);
 
     // Const
     if (token.type == constsym)
@@ -201,13 +201,13 @@ void block()
     }
 
     // printf("space: %d\n", space);
-    code[jmpaddr].M = cx;
-    emit(6,0,spaceOffset + varCounter);
+    code[jumpAddress].M = cx;
+    generate(6,0,spaceOffset + varCounter);
 
     statement();
 
     if (token.type != periodsym)
-        emit(2,0,0);
+        generate(2,0,0);
     lexLevel--;
 }
 
@@ -261,7 +261,7 @@ void statement()
             errorFlag = 1;
         }
 
-        emit(4,lexLevel - symbolTable[j].level,symbolTable[j].addr);
+        generate(4,lexLevel - symbolTable[j].level,symbolTable[j].addr);
     }
     // Call
     else if (token.type == callsym)
@@ -302,7 +302,7 @@ void statement()
             errorFlag = 1;
         }
 
-        emit(5, lexLevel - symbolTable[j].level,symbolTable[j].addr);
+        generate(5, lexLevel - symbolTable[j].level,symbolTable[j].addr);
 
         getNextToken();
     }
@@ -340,7 +340,7 @@ void statement()
         }
 
         ctemp = cx;
-        emit(8,0,0);
+        generate(8,0,0);
 
         getNextToken();
         statement();
@@ -351,7 +351,7 @@ void statement()
         else
         {
             ctemp2 = cx;
-            emit(7,0,0);
+            generate(7,0,0);
             code[ctemp].M = cx;
 
             getNextToken();
@@ -368,7 +368,7 @@ void statement()
         condtition();
 
         int cx2 = cx;
-        emit(8,0,0);
+        generate(8,0,0);
 
         if (token.type != dosym)
         {
@@ -380,7 +380,7 @@ void statement()
 
         // printf("cx1: %d\n", cx1);
         statement();
-        emit(7, 0, cx1);
+        generate(7, 0, cx1);
 
         // printf("cx: %d\n", cx);
         // printf("cx2: %d\n", cx2);
@@ -414,7 +414,7 @@ void statement()
             errorFlag = 1;
         }
 
-		emit(9,0,2);
+		generate(9,0,2);
 
         if ((lexLevel - symbolTable[j].level) < 0)
         {
@@ -422,7 +422,7 @@ void statement()
             errorFlag = 1;
         }
 
-        emit(4, lexLevel - symbolTable[j].level, symbolTable[j].addr);
+        generate(4, lexLevel - symbolTable[j].level, symbolTable[j].addr);
         getNextToken();
     }
     // Write
@@ -450,8 +450,8 @@ void statement()
 
         if (symbolTable[j].kind == 1)
         {
-            emit(1,0, symbolTable[j].val);
-            emit(9,0,1);
+            generate(1,0, symbolTable[j].val);
+            generate(9,0,1);
         }
         else if (symbolTable[j].kind == 2)
         {
@@ -461,8 +461,8 @@ void statement()
                 errorFlag = 1;
             }
 
-            emit(3, lexLevel - symbolTable[j].level, symbolTable[j].addr);
-            emit(9,0,1);
+            generate(3, lexLevel - symbolTable[j].level, symbolTable[j].addr);
+            generate(9,0,1);
         }
         else
         {
@@ -483,7 +483,7 @@ void condtition()
     {
         getNextToken();
         expression();
-        emit(2,0,6);                // ODD
+        generate(2,0,6);                // ODD
     }
     else
     {
@@ -523,7 +523,7 @@ void condtition()
                 break;
         }
 
-        emit(2,0,relOp - 1);
+        generate(2,0,relOp - 1);
     }
 }
 
@@ -539,7 +539,7 @@ void expression()
         term();
 
         if(addop == minussym)
-            emit(2, 0, 1);  // negate
+            generate(2, 0, 1);  // negate
     }
     else
         term();
@@ -551,9 +551,9 @@ void expression()
         term();
 
         if (addop == plussym)
-            emit(2, 0, 2);  // addition
+            generate(2, 0, 2);  // addition
         else
-            emit(2, 0, 3);  // subtraction
+            generate(2, 0, 3);  // subtraction
     }
 }
 
@@ -571,9 +571,9 @@ void term()
         factor();
 
         if (mulop == multsym)
-            emit(2, 0, 4);  // multiplication
+            generate(2, 0, 4);  // multiplication
         else
-            emit(2, 0, 5);  // division
+            generate(2, 0, 5);  // division
     }
 }
 
@@ -594,7 +594,7 @@ void factor()
 
                 if (symbolTable[i].kind == 1)
                 {
-                    emit(1,0,symbolTable[j].val);
+                    generate(1,0,symbolTable[j].val);
                     // printf("EMIT(1,0,%d)\n", symbolTable[j].val);
                 }
                 else if (symbolTable[i].kind == 2)
@@ -605,7 +605,7 @@ void factor()
                         errorFlag = 1;
                     }
 
-                    emit(3,lexLevel - symbolTable[j].level,symbolTable[j].addr);
+                    generate(3,lexLevel - symbolTable[j].level,symbolTable[j].addr);
                     // printf("EMIT(3,%d, addr)\n", symbolTable[j].level);
                     // printf("lexlevel: %d\n", lexLevel);
                 }
@@ -624,7 +624,7 @@ void factor()
         int num = atoi(token.symbol);
         // printf("token symbol: %d\n",num);
 
-        emit(1,0,num);
+        generate(1,0,num);
         getNextToken();
     }
     else if (token.type == lparentsym)
@@ -648,7 +648,7 @@ void factor()
 }
 
 // For code generation
-void emit(int op, int l, int m)
+void generate(int op, int l, int m)
 {
     if (cx > MAX_CODE_LENGTH)
     {
@@ -801,33 +801,33 @@ void convert()
 {
     char *temp;
     char str[MAX_CODE_LENGTH];
-    int compareIdent, compareNum;
+    int identFlag, numFlag;
 
-    while(fgets(str, sizeof str, inFile) != NULL)
+    while(fgets(str, sizeof str, inputFile) != NULL)
     {
         temp = strtok(str, " ");
         while (temp != NULL)
         {
-            compareIdent = strcmp(temp, "identsym");
-            compareNum = strcmp(temp, "numbersym");
+            identFlag = strcmp(temp, "identsym");
+            numFlag = strcmp(temp, "numbersym");
 
-            if ((compareIdent == 0) || (compareNum == 0))
+            if ((identFlag == 0) || (numFlag == 0))
             {
-                strcpy(tokenArray[count].name, temp);
+                strcpy(tokens[count].name, temp);
                 getTokenType(temp, count);
-                fputs(temp, tokenUpdated);
-                fputs("\n", tokenUpdated);
+                fputs(temp, updatedToken);
+                fputs("\n", updatedToken);
 
                 // if identsym or numbersym add the identifier that follows
                 temp = strtok(NULL, " ");
-                strcpy(tokenArray[count].symbol, temp);
+                strcpy(tokens[count].symbol, temp);
             }
             else
             {
-                strcpy(tokenArray[count].name, temp);
+                strcpy(tokens[count].name, temp);
                 getTokenType(temp, count);
-                fputs(temp, tokenUpdated);
-                fputs("\n", tokenUpdated);
+                fputs(temp, updatedToken);
+                fputs("\n", updatedToken);
             }
 
             temp = strtok(NULL, " ");
@@ -840,71 +840,71 @@ void convert()
 void getTokenType(char *name, int count)
 {
     if (strcmp(name, "nulsym") == 0)
-        tokenArray[count].type = nulsym;
+        tokens[count].type = nulsym;
     else if (strcmp(name, "identsym") == 0)
-        tokenArray[count].type = identsym;
+        tokens[count].type = identsym;
     else if (strcmp(name, "numbersym") == 0)
-        tokenArray[count].type = numbersym;
+        tokens[count].type = numbersym;
     else if (strcmp(name, "plussym") == 0)
-        tokenArray[count].type = plussym;
+        tokens[count].type = plussym;
     else if (strcmp(name, "minussym") == 0)
-        tokenArray[count].type = minussym;
+        tokens[count].type = minussym;
     else if (strcmp(name, "multsym") == 0)
-        tokenArray[count].type = multsym;
+        tokens[count].type = multsym;
     else if (strcmp(name, "slashsym") == 0)
-        tokenArray[count].type = slashsym;
+        tokens[count].type = slashsym;
     else if (strcmp(name, "oddsym") == 0)
-        tokenArray[count].type = oddsym;
+        tokens[count].type = oddsym;
     else if (strcmp(name, "eqlsym") == 0)
-        tokenArray[count].type = eqlsym;
+        tokens[count].type = eqlsym;
     else if (strcmp(name, "neqsym") == 0)
-        tokenArray[count].type = neqsym;
+        tokens[count].type = neqsym;
     else if (strcmp(name, "lessym") == 0)
-        tokenArray[count].type = lessym;
+        tokens[count].type = lessym;
     else if (strcmp(name, "leqsym") == 0)
-        tokenArray[count].type = leqsym;
+        tokens[count].type = leqsym;
     else if (strcmp(name, "gtrsym") == 0)
-        tokenArray[count].type = gtrsym;
+        tokens[count].type = gtrsym;
     else if (strcmp(name, "geqsym") == 0)
-        tokenArray[count].type = geqsym;
+        tokens[count].type = geqsym;
     else if (strcmp(name, "lparentsym") == 0)
-        tokenArray[count].type = lparentsym;
+        tokens[count].type = lparentsym;
     else if (strcmp(name, "rparentsym") == 0)
-        tokenArray[count].type = rparentsym;
+        tokens[count].type = rparentsym;
     else if (strcmp(name, "commasym") == 0)
-        tokenArray[count].type = commasym;
+        tokens[count].type = commasym;
     else if (strcmp(name, "semicolonsym") == 0)
-        tokenArray[count].type = semicolonsym;
+        tokens[count].type = semicolonsym;
     else if (strcmp(name, "periodsym") == 0)
-        tokenArray[count].type = periodsym;
+        tokens[count].type = periodsym;
     else if (strcmp(name, "becomesym") == 0)
-        tokenArray[count].type = becomesym;
+        tokens[count].type = becomesym;
     else if (strcmp(name, "beginsym") == 0)
-        tokenArray[count].type = beginsym;
+        tokens[count].type = beginsym;
     else if (strcmp(name, "callsym") == 0)
-        tokenArray[count].type = callsym;
+        tokens[count].type = callsym;
     else if (strcmp(name, "endsym") == 0)
-        tokenArray[count].type = endsym;
+        tokens[count].type = endsym;
     else if (strcmp(name, "ifsym") == 0)
-        tokenArray[count].type = ifsym;
+        tokens[count].type = ifsym;
     else if (strcmp(name, "thensym") == 0)
-        tokenArray[count].type = thensym;
+        tokens[count].type = thensym;
     else if (strcmp(name, "elsesym") == 0)
-        tokenArray[count].type = elsesym;
+        tokens[count].type = elsesym;
     else if (strcmp(name, "whilesym") == 0)
-        tokenArray[count].type = whilesym;
+        tokens[count].type = whilesym;
     else if (strcmp(name, "dosym") == 0)
-        tokenArray[count].type = dosym;
+        tokens[count].type = dosym;
     else if (strcmp(name, "constsym") == 0)
-        tokenArray[count].type = constsym;
+        tokens[count].type = constsym;
     else if (strcmp(name, "varsym") == 0)
-        tokenArray[count].type = varsym;
+        tokens[count].type = varsym;
     else if (strcmp(name, "procsym") == 0)
-        tokenArray[count].type = procsym;
+        tokens[count].type = procsym;
     else if (strcmp(name, "writesym") == 0)
-        tokenArray[count].type = writesym;
+        tokens[count].type = writesym;
     else if (strcmp(name, "readsym") == 0)
-        tokenArray[count].type = readsym;
+        tokens[count].type = readsym;
     else
     {
         errorMessage(29);           // Invalid type for tokenArray
@@ -918,7 +918,7 @@ void printCode()
     int i, j;
 
     for (i = 0; i < printCount; i++)
-        fprintf(outFile, "%d %d %d\n", code[i].OP, code[i].L, code[i].M);
+        fprintf(outputFile, "%d %d %d\n", code[i].OP, code[i].L, code[i].M);
 
     printf("\n\nCode is syntactically correct. Assembly code generated successfully.\n");
     printf("-------------------------------------------\n");
@@ -926,9 +926,9 @@ void printCode()
 
 int parse(char * file)
 {
-    inFile = fopen(file, "r");
-    outFile = fopen("parseOutput.txt", "w");
-    tokenUpdated = fopen("tokenUpdated.txt", "w");
+    inputFile = fopen(file, "r");
+    outputFile = fopen("parseOutput.txt", "w");
+    updatedToken = fopen("tokenUpdated.txt", "w");
     errorFile = fopen("error.txt", "w");
 
     convert();
@@ -939,9 +939,9 @@ int parse(char * file)
 
     printCode();
 
-    fclose(inFile);
-    fclose(outFile);
-    fclose(tokenUpdated);
+    fclose(inputFile);
+    fclose(outputFile);
+    fclose(updatedToken);
 
     return 0;
 }
