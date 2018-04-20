@@ -36,11 +36,11 @@ FILE *errorFile;
 void program();
 void block();
 void statement();
-void condtition();
+void condition();
 void expression();
 void term();
 void factor();
-void getNextToken();
+void gotoNextToken();
 void printTokens(int, int);
 void generate(int, int, int);
 void errorMessage();
@@ -49,16 +49,15 @@ void getTokenType(char*, int);
 void printCode();
 
 // Gets the next token
-void getNextToken()
+void gotoNextToken()
 {
     token = tokens[tokenVal];
-    // printf("NAME: %s \tTYPE: %d \tSYMBOL: %s \tCOUNT: %d \n",tokenArray[tokenVal].name, tokenArray[tokenVal].type, tokenArray[tokenVal].symbol, tokenVal);
 	tokenVal++;
 }
 
 void program()
 {
-    getNextToken();
+    gotoNextToken();
     block();
 
     // Period
@@ -76,36 +75,35 @@ void block()
     int jumpAddress = cx;
     int varCounter = 0;
     lexLevel++;
-    generate(7,0,0);
+    generate(7,0,0); // JMP
 
-    // Const
+    // [ "const" ident "=" number {"," ident "=" number} ";"]
     if (token.type == constsym)
     {
         do
         {
-            getNextToken();
+            gotoNextToken();
             if (token.type != identsym)
             {
-                errorMessage(4);        // const, var, procedure must be followed by identifier
+                errorMessage(4);
                 errorFlag = 1;
             }
-
-            // printf("symval const: %d\n", symVal);
+            
             symbolTable[symVal].kind = 1;
             strcpy(symbolTable[symVal].name, token.symbol);
             symbolTable[symVal].level = lexLevel;
-            getNextToken();
+            gotoNextToken();
 
             if (token.type != eqlsym)
             {
-                errorMessage(3);        // Identifier must be followed by =
+                errorMessage(3);
                 errorFlag = 1;
             }
 
-            getNextToken();
+            gotoNextToken();
             if (token.type != numbersym)
             {
-                errorMessage(2);        // = must be followed by a number
+                errorMessage(2);
                 errorFlag = 1;
             }
 
@@ -115,7 +113,7 @@ void block()
             // symbolTable[symVal].addr = cx;
 
             symVal++;
-            getNextToken();
+            gotoNextToken();
         }while (token.type == commasym);
 
         if (token.type != semicolonsym)
@@ -124,18 +122,19 @@ void block()
             errorFlag = 1;
         }
 
-        getNextToken();
+        gotoNextToken();
     }
 
-    // Var
+    // [ "var" ident {"," ident} ";"]
     if (token.type == varsym)
     {
+        //
         do
         {
-            getNextToken();
+            gotoNextToken();
             if (token.type != identsym)
             {
-                errorMessage(4);        // const, var, procedure must be followed by identifier
+                errorMessage(4);
                 errorFlag = 1;
             }
 
@@ -147,60 +146,60 @@ void block()
 
             symVal++;
             varCounter++;
-            getNextToken();
+            gotoNextToken();
         }while (token.type == commasym);
 
         if (token.type != semicolonsym)
         {
-            errorMessage(5);            // Semicolon or comma missing
+            errorMessage(5);
             errorFlag = 1;
         }
 
-        getNextToken();
+        gotoNextToken();
     }
 
-    // Proc
-    while (token.type == procsym)
-    {
-        getNextToken();
-        if (token.type != identsym)
-        {
-            errorMessage(4);        // const, var, procedure must be followed by identifier
-            errorFlag = 1;
-        }
+    // This isn't a part of the assignment...
+    // Why is it here?
+//    while (token.type == procsym)
+//    {
+//        gotoNextToken();
+//        if (token.type != identsym)
+//        {
+//            errorMessage(4);        // const, var, procedure must be followed by identifier
+//            errorFlag = 1;
+//        }
+//
+//        // printf("symval proc: %d\n", symVal);
+//        symbolTable[symVal].kind = 3;
+//        symbolTable[symVal].level = lexLevel;
+//        symbolTable[symVal].addr = cx;
+//        strcpy(symbolTable[symVal].name, token.symbol);
+//
+//        gotoNextToken();
+//
+//        // lexLevel++;
+//
+//        if (token.type != semicolonsym)
+//        {
+//            errorMessage(5);            // Semicolon or comma missing
+//            errorFlag = 1;
+//        }
+//
+//        gotoNextToken();
+//
+//        symVal++;
+//        // printf("symval proc2: %d\n", symVal);
+//        block();
+//
+//        if (token.type != semicolonsym)
+//        {
+//            errorMessage(5);            // Semicolon or comma missing
+//            errorFlag = 1;
+//        }
+//
+//        gotoNextToken();
+//    }
 
-        // printf("symval proc: %d\n", symVal);
-        symbolTable[symVal].kind = 3;
-        symbolTable[symVal].level = lexLevel;
-        symbolTable[symVal].addr = cx;
-        strcpy(symbolTable[symVal].name, token.symbol);
-
-        getNextToken();
-
-        // lexLevel++;
-
-        if (token.type != semicolonsym)
-        {
-            errorMessage(5);            // Semicolon or comma missing
-            errorFlag = 1;
-        }
-
-        getNextToken();
-
-        symVal++;
-        // printf("symval proc2: %d\n", symVal);
-        block();
-
-        if (token.type != semicolonsym)
-        {
-            errorMessage(5);            // Semicolon or comma missing
-            errorFlag = 1;
-        }
-
-        getNextToken();
-    }
-
-    // printf("space: %d\n", space);
     code[jumpAddress].M = cx;
     generate(6,0,spaceOffset + varCounter);
 
@@ -213,7 +212,7 @@ void block()
 
 void statement()
 {
-    // Identifier
+    // [ident ":=" expression ]
     if (token.type == identsym)
     {
         int i, j = 0;
@@ -241,7 +240,7 @@ void statement()
             errorFlag = 1;
         }
 
-        getNextToken();
+        gotoNextToken();
 
         if (token.type != becomessym)
         {
@@ -249,7 +248,7 @@ void statement()
             errorFlag = 1;
         }
 
-        getNextToken();
+        gotoNextToken();
         expression();
 
         // THIS ADDED IN
@@ -263,58 +262,61 @@ void statement()
 
         generate(4,lexLevel - symbolTable[j].level,symbolTable[j].addr);
     }
-    // Call
-    else if (token.type == callsym)
-    {
-        int i, j = 0;
-
-        getNextToken();
-        if (token.type != identsym)
-        {
-            errorMessage(4);            // const, var, procedure must be followed by identifier
-            errorFlag = 1;
-        }
-
-        if (symVal == 0)
-        {
-            errorMessage(11);           // Undeclared identifier
-            errorFlag = 1;
-        }
-
-        for (i = 0; i < symVal; i++)
-        {
-            if (strcmp(symbolTable[i].name,token.symbol) == 0 && symbolTable[i].kind == 3)
-            {
-                j = i;
-            }
-        }
-
-        if (symbolTable[j].kind != 3)
-        {
-            printf("In statement() callsym: ");
-            errorMessage(12);           // Assignment to constant or procedure is not allowed
-            errorFlag = 1;
-        }
-
-        if ((lexLevel - symbolTable[j].level) < 0)
-        {
-            errorMessage(11);             // Undeclared identifier
-            errorFlag = 1;
-        }
-
-        generate(5, lexLevel - symbolTable[j].level,symbolTable[j].addr);
-
-        getNextToken();
-    }
-    // Begin
+    
+    // This was taken out of the described EBNF we need to make, wasn't it..?
+//    // [ "call" ident ]
+//    else if (token.type == callsym)
+//    {
+//        int i, j = 0;
+//
+//        gotoNextToken();
+//        if (token.type != identsym)
+//        {
+//            errorMessage(4);            // const, var, procedure must be followed by identifier
+//            errorFlag = 1;
+//        }
+//
+//        if (symVal == 0)
+//        {
+//            errorMessage(11);           // Undeclared identifier
+//            errorFlag = 1;
+//        }
+//
+//        for (i = 0; i < symVal; i++)
+//        {
+//            if (strcmp(symbolTable[i].name,token.symbol) == 0 && symbolTable[i].kind == 3)
+//            {
+//                j = i;
+//            }
+//        }
+//
+//        if (symbolTable[j].kind != 3)
+//        {
+//            printf("In statement() callsym: ");
+//            errorMessage(12);           // Assignment to constant or procedure is not allowed
+//            errorFlag = 1;
+//        }
+//
+//        if ((lexLevel - symbolTable[j].level) < 0)
+//        {
+//            errorMessage(11);             // Undeclared identifier
+//            errorFlag = 1;
+//        }
+//
+//        generate(5, lexLevel - symbolTable[j].level,symbolTable[j].addr);
+//
+//        gotoNextToken();
+//    }
+    
+    // [ "begin" statement{ ";" statement} "end" ]
     else if (token.type == beginsym)
     {
-        getNextToken();
+        gotoNextToken();
         statement();
 
         while (token.type == semicolonsym)
         {
-            getNextToken();
+            gotoNextToken();
             statement();
         }
 
@@ -324,14 +326,16 @@ void statement()
             errorFlag = 1;
         }
 
-        getNextToken();
+        gotoNextToken();
     }
-    // If
+    
+    // [ "if" condition "then" statement ]
     else if (token.type == ifsym)
     {
-        int ctemp, ctemp2;
-        getNextToken();
-        condtition();
+        int ctemp, ctemp2; // Try to use more descriptive variable names; use of these not clear.
+        
+        gotoNextToken();
+        condition();
 
         if (token.type != thensym)
         {
@@ -342,30 +346,34 @@ void statement()
         ctemp = cx;
         generate(8,0,0);
 
-        getNextToken();
+        gotoNextToken();
         statement();
+        
+        code[ctemp].M = cx;
 
         // printf("cx if: %d\n", cx);
-        if (token.type != elsesym)
-            code[ctemp].M = cx;
-        else
-        {
-            ctemp2 = cx;
-            generate(7,0,0);
-            code[ctemp].M = cx;
-
-            getNextToken();
-            statement();
-            code[ctemp2].M = cx;
-        }
+        // This wasn't described in the needed language...
+//        if (token.type != elsesym)
+//          code[ctemp].M = cx;
+//        else
+//        {
+//        ctemp2 = cx;
+//        generate(7,0,0);
+//        code[ctemp].M = cx;
+//
+//        gotoNextToken();
+//        statement();
+//        code[ctemp2].M = cx;
+////        }
     }
-    // While
+    
+    // [ "while" condition "do" statement ]
     else if (token.type == whilesym)
     {
         int cx1 = cx;
 
-        getNextToken();
-        condtition();
+        gotoNextToken();
+        condition();
 
         int cx2 = cx;
         generate(8,0,0);
@@ -376,25 +384,24 @@ void statement()
             errorFlag = 1;
         }
 
-        getNextToken();
-
-        // printf("cx1: %d\n", cx1);
+        gotoNextToken();
+        
         statement();
         generate(7, 0, cx1);
 
-        // printf("cx: %d\n", cx);
-        // printf("cx2: %d\n", cx2);
         code[cx2].M = cx;
     }
-    // Read
+    
+    // [ "read" ident ]
     else if (token.type == readsym)
     {
         int i, j = 0;
-        getNextToken();
+        
+        gotoNextToken();
 
         if (token.type != identsym)
         {
-            errorMessage(14);            // call must be followed by an identifier
+            errorMessage(14);            // read must be followed by an identifier
             errorFlag = 1;
         }
 
@@ -423,14 +430,15 @@ void statement()
         }
 
         generate(4, lexLevel - symbolTable[j].level, symbolTable[j].addr);
-        getNextToken();
+        
+        gotoNextToken();
     }
-    // Write
+    // [ "write" ident ]
     else if (token.type == writesym)
     {
         int i, j = 0;
 
-        getNextToken();
+        gotoNextToken();
 
         if (token.type != identsym)
         {
@@ -472,16 +480,16 @@ void statement()
 
         // expression();
 
-		getNextToken();
+		gotoNextToken();
     }
 }
 
-void condtition()
+void condition()
 {
     // Odd
     if (token.type == oddsym)
     {
-        getNextToken();
+        gotoNextToken();
         expression();
         generate(2,0,6);                // ODD
     }
@@ -495,12 +503,13 @@ void condtition()
             errorMessage(20);           // Relational operator expected
             errorFlag = 1;
         }
-
         relOp = token.type;
-
-        getNextToken();
+        gotoNextToken();
+        
         expression();
-
+        
+        // What's the purpose of this if we already fetched relOp before?
+        // This just undoes what work was done before...
         switch (token.type)
         {
             case 8:
@@ -529,16 +538,17 @@ void condtition()
 
 void expression()
 {
-    int addop;
+    int addOp;
 
     // Plus and Minus
     if (token.type == plussym || token.type == minussym)
     {
-        addop = token.type;
-        getNextToken();
+        addOp = token.type;
+        gotoNextToken();
+        
         term();
 
-        if(addop == minussym)
+        if(addOp == minussym)
             generate(2, 0, 1);  // negate
     }
     else
@@ -546,11 +556,12 @@ void expression()
 
     while (token.type == plussym || token.type == minussym)
     {
-        addop = token.type;
-        getNextToken();
+        addOp = token.type;
+        gotoNextToken();
+        
         term();
 
-        if (addop == plussym)
+        if (addOp == plussym)
             generate(2, 0, 2);  // addition
         else
             generate(2, 0, 3);  // subtraction
@@ -559,18 +570,20 @@ void expression()
 
 void term()
 {
-    int mulop;
+    // Stores mult/div symbol for use in generating code
+    int mulOp;
 
     factor();
 
     // Multiply and Divide
     while (token.type == multsym || token.type == slashsym)
     {
-        mulop = token.type;
-        getNextToken();
+        mulOp = token.type;
+        gotoNextToken();
+        
         factor();
 
-        if (mulop == multsym)
+        if (mulOp == multsym)
             generate(2, 0, 4);  // multiplication
         else
             generate(2, 0, 5);  // division
@@ -617,19 +630,21 @@ void factor()
             }
         }
 
-        getNextToken();
+        gotoNextToken();
     }
     else if (token.type == numbersym)
     {
         int num = atoi(token.symbol);
         // printf("token symbol: %d\n",num);
 
-        generate(1,0,num);
-        getNextToken();
+        generate(1, 0, num);
+        
+        gotoNextToken();
     }
     else if (token.type == lparentsym)
     {
-        getNextToken();
+        gotoNextToken();
+        
         expression();
 
         if (token.type != rparentsym)
@@ -638,7 +653,7 @@ void factor()
             errorFlag = 1;
         }
 
-        getNextToken();
+        gotoNextToken();
     }
     else
     {
