@@ -23,7 +23,7 @@ typedef enum {
     commasym = 17,
     semicolonsym = 18,
     periodsym = 19,
-    becomesym = 20,
+    becomessym = 20,
     beginsym = 21,
     endsym = 22,
     ifsym = 23,

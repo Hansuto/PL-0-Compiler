@@ -77,7 +77,7 @@ const char *symbolRep[ ] = {
     "commasym",
     "semicolonsym",
     "periodsym",
-    "becomesym",
+    "becomessym",
     "beginsym",
     "endsym",
     "ifsym",
@@ -403,7 +403,7 @@ void performLexAnalysis(char code[]) {
             case semicolonsym:
             case periodsym:
 
-            case becomesym:
+            case becomessym:
                 token.class = state;
                 appendTokenToTokenList(token);
                 resetToken(&token);
@@ -456,7 +456,7 @@ void performLexAnalysis(char code[]) {
                 // ":=" is the only valid following sequence
                 if(currentChar == '=') {
                     token.lexeme[strlen(token.lexeme)] = currentChar;
-                    state = becomesym;
+                    state = becomessym;
                 } else {
                     encounteredError = 1;
                     printf("Error: Invalid symbol.");

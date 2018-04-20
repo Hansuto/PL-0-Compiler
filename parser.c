@@ -238,12 +238,12 @@ void statement()
         {
             printf("In statement() identsym: ");
             errorMessage(12);             // Assignment to constant or procedure is not allowed
-            errorFlag == 1;
+            errorFlag = 1;
         }
 
         getNextToken();
 
-        if (token.type != becomesym)
+        if (token.type != becomessym)
         {
             errorMessage(19);           // Incorrect symbol following statement
             errorFlag = 1;
@@ -619,7 +619,7 @@ void factor()
 
         getNextToken();
     }
-    else if (token.type = numbersym)
+    else if (token.type == numbersym)
     {
         int num = atoi(token.symbol);
         // printf("token symbol: %d\n",num);
@@ -877,8 +877,8 @@ void getTokenType(char *name, int count)
         tokens[count].type = semicolonsym;
     else if (strcmp(name, "periodsym") == 0)
         tokens[count].type = periodsym;
-    else if (strcmp(name, "becomesym") == 0)
-        tokens[count].type = becomesym;
+    else if (strcmp(name, "becomessym") == 0)
+        tokens[count].type = becomessym;
     else if (strcmp(name, "beginsym") == 0)
         tokens[count].type = beginsym;
     else if (strcmp(name, "callsym") == 0)
