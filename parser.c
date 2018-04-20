@@ -201,12 +201,12 @@ void block()
 //    }
 
     code[jumpAddress].M = cx;
-    generate(6,0,spaceOffset + varCounter);
+    generate(6, 0, spaceOffset + varCounter); // INC
 
     statement();
 
     if (token.type != periodsym)
-        generate(2,0,0);
+        generate(2, 0, 0); // OPR
     lexLevel--;
 }
 
@@ -260,7 +260,7 @@ void statement()
             errorFlag = 1;
         }
 
-        generate(4,lexLevel - symbolTable[j].level,symbolTable[j].addr);
+        generate(4,lexLevel - symbolTable[j].level,symbolTable[j].addr); // STO
     }
     
     // This was taken out of the described EBNF we need to make, wasn't it..?
@@ -344,7 +344,7 @@ void statement()
         }
 
         ctemp = cx;
-        generate(8,0,0);
+        generate(8,0,0); // JPC
 
         gotoNextToken();
         statement();
@@ -376,7 +376,7 @@ void statement()
         condition();
 
         int cx2 = cx;
-        generate(8,0,0);
+        generate(8,0,0); // JPC
 
         if (token.type != dosym)
         {
@@ -387,7 +387,7 @@ void statement()
         gotoNextToken();
         
         statement();
-        generate(7, 0, cx1);
+        generate(7, 0, cx1); // JMP
 
         code[cx2].M = cx;
     }
@@ -421,7 +421,7 @@ void statement()
             errorFlag = 1;
         }
 
-		generate(9,0,2);
+		generate(9,0,2); // SIO1
 
         if ((lexLevel - symbolTable[j].level) < 0)
         {
@@ -429,10 +429,11 @@ void statement()
             errorFlag = 1;
         }
 
-        generate(4, lexLevel - symbolTable[j].level, symbolTable[j].addr);
+        generate(4, lexLevel - symbolTable[j].level, symbolTable[j].addr); // STO
         
         gotoNextToken();
     }
+    
     // [ "write" ident ]
     else if (token.type == writesym)
     {
@@ -458,8 +459,8 @@ void statement()
 
         if (symbolTable[j].kind == 1)
         {
-            generate(1,0, symbolTable[j].val);
-            generate(9,0,1);
+            generate(1,0, symbolTable[j].val); // LIT
+            generate(9,0,1); // SIO1
         }
         else if (symbolTable[j].kind == 2)
         {
@@ -469,8 +470,8 @@ void statement()
                 errorFlag = 1;
             }
 
-            generate(3, lexLevel - symbolTable[j].level, symbolTable[j].addr);
-            generate(9,0,1);
+            generate(3, lexLevel - symbolTable[j].level, symbolTable[j].addr); // LOD
+            generate(9,0,1); // SIO1
         }
         else
         {
@@ -491,7 +492,7 @@ void condition()
     {
         gotoNextToken();
         expression();
-        generate(2,0,6);                // ODD
+        generate(2,0,6); // OPR (Odd)
     }
     else
     {
@@ -508,31 +509,7 @@ void condition()
         
         expression();
         
-        // What's the purpose of this if we already fetched relOp before?
-        // This just undoes what work was done before...
-        switch (token.type)
-        {
-            case 8:
-                relOp = eqlsym;
-                break;
-            case 9:
-                relOp = neqsym;
-                break;
-            case 10:
-                relOp = lessym;
-                break;
-            case 11:
-                relOp = lessym;
-                break;
-            case 12:
-                relOp = gtrsym;
-                break;
-            case 13:
-                relOp = geqsym;
-                break;
-        }
-
-        generate(2,0,relOp - 1);
+        generate(2, 0, relOp - 1); // OPR (op)
     }
 }
 
@@ -607,8 +584,7 @@ void factor()
 
                 if (symbolTable[i].kind == 1)
                 {
-                    generate(1,0,symbolTable[j].val);
-                    // printf("EMIT(1,0,%d)\n", symbolTable[j].val);
+                    generate(1 ,0, symbolTable[j].val); // LIT
                 }
                 else if (symbolTable[i].kind == 2)
                 {
@@ -618,9 +594,7 @@ void factor()
                         errorFlag = 1;
                     }
 
-                    generate(3,lexLevel - symbolTable[j].level,symbolTable[j].addr);
-                    // printf("EMIT(3,%d, addr)\n", symbolTable[j].level);
-                    // printf("lexlevel: %d\n", lexLevel);
+                    generate(3, lexLevel - symbolTable[j].level, symbolTable[j].addr); // LOD
                 }
                 else
                 {
@@ -635,9 +609,8 @@ void factor()
     else if (token.type == numbersym)
     {
         int num = atoi(token.symbol);
-        // printf("token symbol: %d\n",num);
-
-        generate(1, 0, num);
+        
+        generate(1, 0, num); // LIT
         
         gotoNextToken();
     }
