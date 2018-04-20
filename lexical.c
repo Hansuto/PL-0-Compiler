@@ -547,6 +547,10 @@ int lexer(char * file) {
             printf("%d ", tokenToTest.class);
             if (tokenToTest.class <= 3)
                 printf("%s ", tokenToTest.lexeme);
+            
+            /* Extra spacing added due to changes in expected output
+                and our current output */
+            printf(" ");
         }
 
         printf("\n\nSymbolic Representation:\n");
@@ -559,9 +563,15 @@ int lexer(char * file) {
                 printf("%s ", tokenToTest.lexeme);
                 fprintf(ofp, "%s ", tokenToTest.lexeme);
             }
-
+            
+            /* Extra spacing added due to changes in expected output
+             and our current output */
+            printf(" ");
         }
     }
+    
+    printf("\n");
+    
     fclose(ofp);
     return 0;
 }
