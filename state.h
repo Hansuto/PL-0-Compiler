@@ -1,6 +1,32 @@
 #ifndef STATE_H_
 #define STATE_H_
 
+// Different operation types
+typedef enum {
+    LIT = 1,
+    RET = 2,
+    LOD = 3,
+    STO = 4,
+    CAL = 5,
+    INC = 6,
+    JMP = 7,
+    JPC = 8,
+    SIO = 9,
+    NEG = 10,
+    ADD = 11,
+    SUB = 12,
+    MUL = 13,
+    DIV = 14,
+    ODD = 15,
+    MOD = 16,
+    EQL = 17,
+    NEQ = 18,
+    LSS = 19,
+    LEQ = 20,
+    GTR = 21,
+    GEQ = 22
+} OP;
+
 //state values
 typedef enum {
     start = 0,

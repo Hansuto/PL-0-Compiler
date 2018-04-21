@@ -9,6 +9,7 @@ Chris Taliaferro - ch119541
 #include <stdio.h>
 #include <stdlib.h>
 #include "vm.h"
+#include "state.h"
 
 #define NUM_REGISTERS 16
 #define MAX_LEXI_LEVELS 3
@@ -151,21 +152,25 @@ void fetchCycle() {
 
 void executeCycle() {
 	switch(IR.OP) {
-		case 1: // LIT
+		case LIT:
             registers[IR.R] = IR.M;
 			break;
-		case 2: // RET
+            
+		case RET:
             SP = BP - 1;
             BP = stack[SP + 3];
             PC = stack[SP + 4];
 			break;
-		case 3: // LOD
+            
+		case LOD:
 			registers[IR.R] = stack[base(IR.L, BP) + IR.M];
 			break;
-		case 4: // STO
+            
+		case STO:
 			stack[base(IR.L, BP) + IR.M] = registers[IR.R];
 			break;
-		case 5: // CAL
+            
+		case CAL:
 			stack[SP + 1] = 0;
 			stack[SP + 2] = base(IR.L, BP);
 			stack[SP + 3] = BP;
@@ -173,18 +178,22 @@ void executeCycle() {
 			BP = SP + 1;
 			PC = IR.M;
 			break;
-		case 6: // INC
+            
+		case INC:
 			SP += IR.M;
 			break;
-		case 7: // JMP
+            
+		case JMP:
 			PC = IR.M;
 			break;
-		case 8: // JPC
+            
+		case JPC:
 			if (registers[IR.R] == 0) {
 				PC = IR.M;
 			}
 			break;
-		case 9: // SIO
+            
+		case SIO:
 			if (IR.M == 1) {
 				printf("\t\t%2d\n", registers[IR.R]);
 			} else if (IR.M == 2) {
@@ -196,43 +205,55 @@ void executeCycle() {
                 halt = 1;
             }
 			break;
-        case 10: // NEG
+            
+        case NEG:
             registers[IR.R] = -registers[IR.L];
             break;
-        case 11: // ADD
+            
+        case ADD:
             registers[IR.R] = registers[IR.L] + registers[IR.M];
             break;
-        case 12: // SUB
+        case SUB:
             registers[IR.R] = registers[IR.L] - registers[IR.M];
             break;
-        case 13: // MUL
+            
+        case MUL:
             registers[IR.R] = registers[IR.L] * registers[IR.M];
             break;
-        case 14: // DIV
+            
+        case DIV:
             registers[IR.R] = registers[IR.L] / registers[IR.M];
             break;
-        case 15: // ODD
+            
+        case ODD:
             registers[IR.R] %= 2;
             break;
-        case 16: // MOD
+            
+        case MOD:
             registers[IR.R] = registers[IR.L] % registers[IR.M];
             break;
-        case 17: // EQL
+            
+        case EQL:
             registers[IR.R] = registers[IR.L] == registers[IR.M];
             break;
-        case 18: // NEQ
+            
+        case NEQ:
             registers[IR.R] = registers[IR.L] != registers[IR.M];
             break;
-        case 19: // LSS
+            
+        case LSS:
             registers[IR.R] = registers[IR.L] < registers[IR.M];
             break;
-        case 20: // LEQ
+            
+        case LEQ:
             registers[IR.R] = registers[IR.L] <= registers[IR.M];
             break;
-        case 21: // GTR
+            
+        case GTR:
             registers[IR.R] = registers[IR.L] > registers[IR.M];
             break;
-        case 22: // GEQ
+            
+        case GEQ:
             registers[IR.R] = registers[IR.L] >= registers[IR.M];
             break;
 	}

@@ -35,7 +35,7 @@ FILE *errorFile;
 void parseProgram();
 void parseBlock();
 void parseConstantDeclaration();
-void parseVarDeclaration();
+int  parseVarDeclaration();
 void parseStatement();
 void parseCondition();
 void parseRelOp();
@@ -43,9 +43,10 @@ void parseExpression();
 void parseTerm();
 void parseFactor();
 
+int emit(OP op, int r, int l, int m);
+
 void gotoNextToken();
 void printTokens(int, int);
-void emit(int op, int r, int l, int m);
 void errorMessage();
 void convert();
 void getTokenType(char*, int);
@@ -67,19 +68,25 @@ void parseProgram()
     // Period expected
     if (token.type != periodsym) { errorMessage(9); }
 
-    emit(9, 0, 0, 3);      // End program
+    emit(SIO, 0, 0, 3);      // End program
 }
 
 // const-declaration  var-declaration  statement.
 void parseBlock()
 {
     lexLevel++;
+    int space = 4;
     
     parseConstantDeclaration();
     
-    parseVarDeclaration();
+    space += parseVarDeclaration();
 
+    // Increment to the place after where variables are defined
+    emit(INC, 0, 0 ,space);
+    
     parseStatement();
+    
+    emit(SIO, 0, 0, 1);
     
     lexLevel--;
 }
@@ -114,16 +121,22 @@ void parseConstantDeclaration()
 }
 
 // [ "var" ident {"," ident} “;"]
-void parseVarDeclaration()
+// RETURNS: Number of vars parsed
+int parseVarDeclaration()
 {
+    int numVars = 0;
+    
     if (token.type == varsym)
     {
+        numVars++;
+        
         gotoNextToken();
         if (token.type != identsym) { errorMessage(4); }
         
         gotoNextToken();
         while (token.type == commasym)
         {
+            numVars++;
             gotoNextToken();
             // Identifier expected
             if (token.type != identsym) { errorMessage(4); }
@@ -136,6 +149,8 @@ void parseVarDeclaration()
         
         gotoNextToken();
     }
+    
+    return numVars;
 }
 
 /*
@@ -310,21 +325,18 @@ void parseFactor()
 }
 
 // For code generation
-void emit(int op, int r, int l, int m)
+// Returns the address of code index generation
+int emit(OP op, int r, int l, int m)
 {
-    if (codeIndex > MAX_CODE_LENGTH)
-    {
-        errorMessage(28);
-        errorFlag = 1;
-    }
-    else
-    {
-        code[codeIndex].OP = op;
-        code[codeIndex].R = r;
-        code[codeIndex].L = l;
-        code[codeIndex].M = m;
-        codeIndex++;
-    }
+    if (codeIndex > MAX_CODE_LENGTH) { errorMessage(28); }
+    
+    code[codeIndex].OP = op;
+    code[codeIndex].R = r;
+    code[codeIndex].L = l;
+    code[codeIndex].M = m;
+    codeIndex++;
+    
+    return codeIndex - 1;
 }
 
 //Error messages for the PL/0 Parser

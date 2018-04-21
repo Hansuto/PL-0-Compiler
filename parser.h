@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "state.h"
 
 // Constant values
 #define MAX_STACK_HEIGHT 2000
@@ -18,7 +19,7 @@ int errorFlag;      // To know if hit an error
 // Struct pMachine
 typedef struct
 {
-    int OP;
+    OP OP;
     int R;
     int L;
     int M;
