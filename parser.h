@@ -19,6 +19,7 @@ int errorFlag;      // To know if hit an error
 typedef struct
 {
     int OP;
+    int R;
     int L;
     int M;
 }instruction;

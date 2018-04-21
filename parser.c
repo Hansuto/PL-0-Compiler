@@ -42,7 +42,7 @@ void factor();
 
 void gotoNextToken();
 void printTokens(int, int);
-void emit(int op, int l, int m);
+void emit(int op, int r, int l, int m);
 void errorMessage();
 void convert();
 void getTokenType(char*, int);
@@ -67,7 +67,7 @@ void program()
         errorFlag = 1;
     }
 
-    emit(9,0,3);      // End program
+    emit(9, 0, 0, 3);      // End program
 }
 
 void block()
@@ -256,7 +256,6 @@ void statement()
 
         // THIS ADDED IN
         // printf("j value2: %d\n", j);
-        // printf("EMIT(4,0,%d)\n", symbolTable[j].addr);
         if ((lexLevel - symbolTable[j].level) < 0)
         {
             errorMessage(11);             // Undeclared identifier
@@ -534,7 +533,6 @@ void factor()
     else if (token.type == lparentsym)
     {
         gotoNextToken();
-        
         expression();
 
         if (token.type != rparentsym)
@@ -553,7 +551,7 @@ void factor()
 }
 
 // For code generation
-void emit(int op, int l, int m)
+void emit(int op, int r, int l, int m)
 {
     if (codeIndex > MAX_CODE_LENGTH)
     {
@@ -563,6 +561,7 @@ void emit(int op, int l, int m)
     else
     {
         code[codeIndex].OP = op;
+        code[codeIndex].R = r;
         code[codeIndex].L = l;
         code[codeIndex].M = m;
         codeIndex++;
@@ -821,7 +820,9 @@ void printCode()
     int i, j;
 
     for (i = 0; i < codeIndex; i++)
-        fprintf(outputFile, "%d %d %d\n", code[i].OP, code[i].L, code[i].M);
+    {
+        fprintf(outputFile, "%d %d %d %d\n", code[i].OP, code[i].R, code[i].L, code[i].M);
+    }
 
     printf("\n\nCode is syntactically correct. Assembly code generated successfully.\n");
     printf("-------------------------------------------\n");
