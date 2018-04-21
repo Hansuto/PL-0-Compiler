@@ -16,15 +16,16 @@ instruction code[MAX_CODE_LENGTH];
 tokenType tokens[MAX_CODE_LENGTH];
 
 tokenType token;
-int symVal = 0;         // symbolTable[]
-int codeVal = 0;        // code[]
-int tokenVal = 0;       // tokenArray[]
-int count = 0;          // removeID_Num function
-int relOp = 0;          // condition switch
-int codeIndex = 0;      // code counter emit function
-int spaceOffset = 4;    // startin point for symbol table
-int lexLevel = 0;       // keep track of current lex level--
-                        // --increase when enter Block and decrease when exit it
+int symVal = 0;           // symbolTable[]
+int codeVal = 0;          // code[]
+int tokenVal = 0;         // tokenArray[]
+int count = 0;            // removeID_Num function
+int relOp = 0;            // condition switch
+int codeIndex = 0;        // code counter emit function
+int symbolTableIndex = 0; // Size of the symbol table
+int spaceOffset = 4;      // startin point for symbol table
+int lexLevel = 0;         // keep track of current lex level--
+                          // --increase when enter Block and decrease when exit it
 
 FILE *inputFile;
 FILE *outputFile;
@@ -44,6 +45,8 @@ void parseTerm();
 void parseFactor();
 
 int emit(OP op, int r, int l, int m);
+int enterSymbol(symbolType type, char *name, int value, int level, int address);
+int findSymbolIndexWithName(char* identifier);
 
 void gotoNextToken();
 void printTokens(int, int);
@@ -75,7 +78,7 @@ void parseProgram()
 void parseBlock()
 {
     lexLevel++;
-    int space = 4;
+    int space = spaceOffset;
     
     parseConstantDeclaration();
     
@@ -110,6 +113,8 @@ void parseConstantDeclaration()
             // number expected
             if (token.type != numbersym) { errorMessage(2); }
             
+            // ENTER(constant, ident, number);
+            
             gotoNextToken();
         } while (token.type == commasym);
         
@@ -128,21 +133,16 @@ int parseVarDeclaration()
     
     if (token.type == varsym)
     {
-        numVars++;
-        
-        gotoNextToken();
-        if (token.type != identsym) { errorMessage(4); }
-        
-        gotoNextToken();
-        while (token.type == commasym)
-        {
+        do {
             numVars++;
-            gotoNextToken();
-            // Identifier expected
-            if (token.type != identsym) { errorMessage(4); }
             
             gotoNextToken();
-        }
+            if (token.type != identsym) { errorMessage(4); }
+            
+            // ENTER(variable, ident, level);
+            
+            gotoNextToken();
+        } while (token.type == commasym);
         
         // Semi-colon expected
         if (token.type != semicolonsym) { errorMessage(5); }
@@ -166,12 +166,20 @@ void parseStatement()
     // [ident ":=" expression ]
     if (token.type == identsym)
     {
+        /*
+         i= find(ident);
+         if i== 0 then ERROR (“Undeclared identifier”);
+         if symboltype(i) != variable then ERROR (“Assignment to constant or procedure is not allowed”);
+         */
+        
         gotoNextToken();
         // ":=" expected
         if (token.type != becomessym) { errorMessage(19); }
 
         gotoNextToken();
         parseExpression();
+        
+        // gen(STO, symbollevel(i), symboladdress(i));
     }
     
     // [ "begin" statement{ ";" statement} "end" ]
@@ -303,6 +311,15 @@ void parseFactor()
 {
     if (token.type == identsym)
     {
+        /*
+         i= find(ident);
+         if i == 0 then ERROR();
+         
+         if symboltype(i) == variable then gen(LOD, symbollevel(i), symboladdress(i));
+         else if symboltype(i) == constant then gen(LIT, 0, symbolval(i));
+         else ERROR();GET_TOKEN();
+         */
+        
         gotoNextToken();
     }
     else if (token.type == numbersym)
@@ -328,7 +345,7 @@ void parseFactor()
 // Returns the address of code index generation
 int emit(OP op, int r, int l, int m)
 {
-    if (codeIndex > MAX_CODE_LENGTH) { errorMessage(28); }
+    if (codeIndex == MAX_CODE_LENGTH) { errorMessage(28); }
     
     code[codeIndex].OP = op;
     code[codeIndex].R = r;
@@ -337,6 +354,38 @@ int emit(OP op, int r, int l, int m)
     codeIndex++;
     
     return codeIndex - 1;
+}
+
+// Enters in a symbol with the given information to the symbol table
+// Returns the address of the symbol
+int enterSymbol(symbolType type, char *name, int value, int level, int address)
+{
+    if (symbolTableIndex == MAX_SYMBOL_TABLE_SIZE) { errorMessage(2); }
+    
+    symbolTable[symbolTableIndex].type = type;
+    strcpy(symbolTable[symbolTableIndex].name, name);
+    symbolTable[symbolTableIndex].value = value;
+    symbolTable[symbolTableIndex].level = level;
+    symbolTable[symbolTableIndex].address = address;
+    
+    symbolTableIndex++;
+    
+    return symbolTableIndex - 1;
+}
+
+// Finds a symbol with the given name
+int findSymbolIndexWithName(char* identifier)
+{
+    int index;
+    for(index = symbolTableIndex - 1; index >= 0 ; index--)
+    {
+        if (strcmp(symbolTable[index].name, identifier)==0)
+        {
+            return index;
+        }
+    }
+    
+    return -1;
 }
 
 //Error messages for the PL/0 Parser
@@ -466,6 +515,11 @@ void errorMessage(int error)
         case 30:
             printf("Cannot write to a procedure. \n");
             fprintf(errorFile, "Cannot write to a procedure. \n");
+            break;
+        case 31:
+            printf("Symbol table size went over maximum number of symbols");
+            fprintf(errorFile, "Error. Too many symbols generated.");
+            break;
         default:
             printf("General Error. Need to make an error message for this.\n");
             fprintf(errorFile, "General Error. Need to make an error message for this.\n");

@@ -25,17 +25,24 @@ typedef struct
     int M;
 }instruction;
 
+// The different types of symbols you can have
+typedef enum {
+    constType = 1,
+    varType = 2,
+    procType = 3
+} symbolType;
+
 // Data structure for symbol
 // const: kind, name, value
 // var:   kind, name, L, M
 typedef struct
 {
-    int kind;                               // const = 1, var = 2, proc = 3
+    symbolType type;                        // The type of symbol this is
     char name[MAX_IDENTIFIER_LENGTH];       // name up to 11 characters
-    int val;                                // number (ASCII value)
+    int value;                                // number (ASCII value)
     int level;                              // L level
-    int addr;                               // M address
-}symbol;
+    int address;                               // M address
+} symbol;
 
 // Token struct
 typedef struct 
