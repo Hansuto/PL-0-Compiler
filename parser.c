@@ -21,8 +21,7 @@ int codeVal = 0;        // code[]
 int tokenVal = 0;       // tokenArray[]
 int count = 0;          // removeID_Num function
 int relOp = 0;          // condition switch
-int cx = 0;             // code counter emit function
-int printCount = 0;     // helper to print generated code
+int codeIndex = 0;      // code counter emit function
 int spaceOffset = 4;    // startin point for symbol table
 int lexLevel = 0;       // keep track of current lex level--
                         // --increase when enter Block and decrease when exit it
@@ -40,9 +39,10 @@ void condition();
 void expression();
 void term();
 void factor();
+
 void gotoNextToken();
 void printTokens(int, int);
-void generate(int, int, int);
+void emit(int op, int l, int m);
 void errorMessage();
 void convert();
 void getTokenType(char*, int);
@@ -67,15 +67,16 @@ void program()
         errorFlag = 1;
     }
 
-    generate(9,0,3);      // End program
+    emit(9,0,3);      // End program
 }
 
 void block()
 {
-    int jumpAddress = cx;
+    int jumpAddress = codeIndex;
     int varCounter = 0;
     lexLevel++;
-    generate(7,0,0); // JMP
+    
+    // TODO: Emit (most likely)
 
     // [ "const" ident "=" number {"," ident "=" number} ";"]
     if (token.type == constsym)
@@ -110,7 +111,7 @@ void block()
             int val = atoi(token.symbol);
             symbolTable[symVal].val = val;
 
-            // symbolTable[symVal].addr = cx;
+            // symbolTable[symVal].addr = codeIndex;
 
             symVal++;
             gotoNextToken();
@@ -172,7 +173,7 @@ void block()
 //        // printf("symval proc: %d\n", symVal);
 //        symbolTable[symVal].kind = 3;
 //        symbolTable[symVal].level = lexLevel;
-//        symbolTable[symVal].addr = cx;
+//        symbolTable[symVal].addr = codeIndex;
 //        strcpy(symbolTable[symVal].name, token.symbol);
 //
 //        gotoNextToken();
@@ -200,13 +201,16 @@ void block()
 //        gotoNextToken();
 //    }
 
-    code[jumpAddress].M = cx;
-    generate(6, 0, spaceOffset + varCounter); // INC
+    code[jumpAddress].M = codeIndex;
+    // TODO: Emit
 
     statement();
 
     if (token.type != periodsym)
-        generate(2, 0, 0); // OPR
+    {
+        // TODO: Emit
+    }
+    
     lexLevel--;
 }
 
@@ -241,7 +245,6 @@ void statement()
         }
 
         gotoNextToken();
-
         if (token.type != becomessym)
         {
             errorMessage(19);           // Incorrect symbol following statement
@@ -260,53 +263,8 @@ void statement()
             errorFlag = 1;
         }
 
-        generate(4,lexLevel - symbolTable[j].level,symbolTable[j].addr); // STO
+        // TODO: emit
     }
-    
-    // This was taken out of the described EBNF we need to make, wasn't it..?
-//    // [ "call" ident ]
-//    else if (token.type == callsym)
-//    {
-//        int i, j = 0;
-//
-//        gotoNextToken();
-//        if (token.type != identsym)
-//        {
-//            errorMessage(4);            // const, var, procedure must be followed by identifier
-//            errorFlag = 1;
-//        }
-//
-//        if (symVal == 0)
-//        {
-//            errorMessage(11);           // Undeclared identifier
-//            errorFlag = 1;
-//        }
-//
-//        for (i = 0; i < symVal; i++)
-//        {
-//            if (strcmp(symbolTable[i].name,token.symbol) == 0 && symbolTable[i].kind == 3)
-//            {
-//                j = i;
-//            }
-//        }
-//
-//        if (symbolTable[j].kind != 3)
-//        {
-//            printf("In statement() callsym: ");
-//            errorMessage(12);           // Assignment to constant or procedure is not allowed
-//            errorFlag = 1;
-//        }
-//
-//        if ((lexLevel - symbolTable[j].level) < 0)
-//        {
-//            errorMessage(11);             // Undeclared identifier
-//            errorFlag = 1;
-//        }
-//
-//        generate(5, lexLevel - symbolTable[j].level,symbolTable[j].addr);
-//
-//        gotoNextToken();
-//    }
     
     // [ "begin" statement{ ";" statement} "end" ]
     else if (token.type == beginsym)
@@ -332,7 +290,7 @@ void statement()
     // [ "if" condition "then" statement ]
     else if (token.type == ifsym)
     {
-        int ctemp, ctemp2; // Try to use more descriptive variable names; use of these not clear.
+        int codeIndexTemp, codeIndexTemp2;
         
         gotoNextToken();
         condition();
@@ -343,40 +301,24 @@ void statement()
             errorFlag = 1;
         }
 
-        ctemp = cx;
-        generate(8,0,0); // JPC
+        codeIndexTemp = codeIndex;
 
         gotoNextToken();
         statement();
         
-        code[ctemp].M = cx;
-
-        // printf("cx if: %d\n", cx);
-        // This wasn't described in the needed language...
-//        if (token.type != elsesym)
-//          code[ctemp].M = cx;
-//        else
-//        {
-//        ctemp2 = cx;
-//        generate(7,0,0);
-//        code[ctemp].M = cx;
-//
-//        gotoNextToken();
-//        statement();
-//        code[ctemp2].M = cx;
-////        }
+        code[codeIndexTemp].M = codeIndex;
     }
     
     // [ "while" condition "do" statement ]
     else if (token.type == whilesym)
     {
-        int cx1 = cx;
+        int codeIndexTemp1 = codeIndex;
 
         gotoNextToken();
         condition();
 
-        int cx2 = cx;
-        generate(8,0,0); // JPC
+        int codeIndexTemp2 = codeIndex;
+        // TODO: Emit
 
         if (token.type != dosym)
         {
@@ -387,9 +329,9 @@ void statement()
         gotoNextToken();
         
         statement();
-        generate(7, 0, cx1); // JMP
+        // TODO: Emit
 
-        code[cx2].M = cx;
+        code[codeIndexTemp2].M = codeIndex;
     }
     
     // [ "read" ident ]
@@ -421,7 +363,7 @@ void statement()
             errorFlag = 1;
         }
 
-		generate(9,0,2); // SIO1
+        // TODO: Emit
 
         if ((lexLevel - symbolTable[j].level) < 0)
         {
@@ -429,7 +371,7 @@ void statement()
             errorFlag = 1;
         }
 
-        generate(4, lexLevel - symbolTable[j].level, symbolTable[j].addr); // STO
+        // TODO: emit
         
         gotoNextToken();
     }
@@ -447,40 +389,7 @@ void statement()
             errorFlag = 1;
         }
 
-        for (i = 0; i < symVal; i++)
-        {
-            // printf("SYM Name: %s TOK Sym: %s\n",symbolTable[i].name,token.symbol);
-            if (strcmp(symbolTable[i].name,token.symbol) == 0)                      // removed .kind == 2 check
-            {
-                j = i;
-            }
-            // printf("i value: %d j value: %d\n", i, j);
-        }
-
-        if (symbolTable[j].kind == 1)
-        {
-            generate(1,0, symbolTable[j].val); // LIT
-            generate(9,0,1); // SIO1
-        }
-        else if (symbolTable[j].kind == 2)
-        {
-            if ((lexLevel - symbolTable[j].level) < 0)
-            {
-                errorMessage(11);             // Undeclared identifier
-                errorFlag = 1;
-            }
-
-            generate(3, lexLevel - symbolTable[j].level, symbolTable[j].addr); // LOD
-            generate(9,0,1); // SIO1
-        }
-        else
-        {
-            errorMessage(30);               // Cannot write to a procedure
-            errorFlag = 1;
-        }
-
-        // expression();
-
+        // TODO: Emit Code Here
 		gotoNextToken();
     }
 }
@@ -492,7 +401,7 @@ void condition()
     {
         gotoNextToken();
         expression();
-        generate(2,0,6); // OPR (Odd)
+        // TODO: Emit code here
     }
     else
     {
@@ -509,7 +418,7 @@ void condition()
         
         expression();
         
-        generate(2, 0, relOp - 1); // OPR (op)
+        // TODO: Emit code here
     }
 }
 
@@ -526,7 +435,9 @@ void expression()
         term();
 
         if(addOp == minussym)
-            generate(2, 0, 1);  // negate
+        {
+            // TODO: Emit
+        }
     }
     else
         term();
@@ -539,9 +450,13 @@ void expression()
         term();
 
         if (addOp == plussym)
-            generate(2, 0, 2);  // addition
+        {
+            // TODO: Emit
+        }
         else
-            generate(2, 0, 3);  // subtraction
+        {
+            // TODO: Emit
+        }
     }
 }
 
@@ -561,9 +476,13 @@ void term()
         factor();
 
         if (mulOp == multsym)
-            generate(2, 0, 4);  // multiplication
+        {
+            // TODO: Emit
+        }
         else
-            generate(2, 0, 5);  // division
+        {
+            // TODO: Emit
+        }
     }
 }
 
@@ -576,15 +495,13 @@ void factor()
         // printf("symval: %d\n", symVal);
         for (i = 0; i < symVal; i++)
         {
-            if (strcmp(symbolTable[i].name,token.symbol) == 0)
+            if (strcmp(symbolTable[i].name, token.symbol) == 0)
             {
                 j = i;
 
-                // printf("j value: %d\n", j);
-
                 if (symbolTable[i].kind == 1)
                 {
-                    generate(1 ,0, symbolTable[j].val); // LIT
+                    // TODO: Emit
                 }
                 else if (symbolTable[i].kind == 2)
                 {
@@ -594,7 +511,7 @@ void factor()
                         errorFlag = 1;
                     }
 
-                    generate(3, lexLevel - symbolTable[j].level, symbolTable[j].addr); // LOD
+                    // TODO: Emit
                 }
                 else
                 {
@@ -610,7 +527,7 @@ void factor()
     {
         int num = atoi(token.symbol);
         
-        generate(1, 0, num); // LIT
+        // TODO: Emit
         
         gotoNextToken();
     }
@@ -636,22 +553,20 @@ void factor()
 }
 
 // For code generation
-void generate(int op, int l, int m)
+void emit(int op, int l, int m)
 {
-    if (cx > MAX_CODE_LENGTH)
+    if (codeIndex > MAX_CODE_LENGTH)
     {
         errorMessage(28);
         errorFlag = 1;
     }
     else
     {
-        code[cx].OP = op; 	    // opcode
-        code[cx].L = l;	        // lex level
-        code[cx].M = m;         // modifier
-        cx++;
+        code[codeIndex].OP = op;
+        code[codeIndex].L = l;
+        code[codeIndex].M = m;
+        codeIndex++;
     }
-
-    printCount++;
 }
 
 //Error messages for the PL/0 Parser
@@ -905,7 +820,7 @@ void printCode()
 {
     int i, j;
 
-    for (i = 0; i < printCount; i++)
+    for (i = 0; i < codeIndex; i++)
         fprintf(outputFile, "%d %d %d\n", code[i].OP, code[i].L, code[i].M);
 
     printf("\n\nCode is syntactically correct. Assembly code generated successfully.\n");
