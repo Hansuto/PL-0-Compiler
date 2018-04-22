@@ -24,7 +24,7 @@ int relOp = 0;            // condition switch
 int codeIndex = 0;        // code counter emit function
 int symbolTableIndex = 0; // Size of the symbol table
 int spaceOffset = 4;      // startin point for symbol table
-int lexLevel = 0;         // keep track of current lex level--
+int lexLevel = -1;        // keep track of current lex level--
                           // --increase when enter Block and decrease when exit it
 
 FILE *inputFile;
@@ -49,7 +49,6 @@ int enterSymbol(symbolType type, char *name, int value, int level, int address);
 int findSymbolIndexWithName(char* identifier);
 
 void gotoNextToken();
-void printTokens(int, int);
 void errorMessage();
 void convert();
 void getTokenType(char*, int);
@@ -78,18 +77,17 @@ void parseProgram()
 void parseBlock()
 {
     lexLevel++;
-    int space = spaceOffset;
-    
+
     parseConstantDeclaration();
     
-    space += parseVarDeclaration();
+    parseVarDeclaration();
 
     // Increment to the place after where variables are defined
-    emit(INC, 0, 0 ,space);
+    emit(INC, 0, lexLevel, spaceOffset);
     
     parseStatement();
     
-    emit(SIO, 0, 0, 1);
+    emit(SIO, 0, lexLevel, 1);
     
     lexLevel--;
 }
@@ -104,6 +102,8 @@ void parseConstantDeclaration()
             gotoNextToken();
             // identifier expected
             if (token.type != identsym) { errorMessage(4); }
+            
+            char* identifier = token.name;
 
             gotoNextToken();
             // "=" expected
@@ -113,7 +113,8 @@ void parseConstantDeclaration()
             // number expected
             if (token.type != numbersym) { errorMessage(2); }
             
-            // ENTER(constant, ident, number);
+            // Address doesn't matter for constants
+            enterSymbol(constType, identifier, atoi(token.symbol), lexLevel, 0);
             
             gotoNextToken();
         } while (token.type == commasym);
@@ -139,7 +140,11 @@ int parseVarDeclaration()
             gotoNextToken();
             if (token.type != identsym) { errorMessage(4); }
             
-            // ENTER(variable, ident, level);
+            // Enters a variable type in the symbol table with value, address of offset.
+            // Level is set to lexLevel
+            // NOTE: Address of 0 may not be right?
+            enterSymbol(varType, token.name, 0, lexLevel, spaceOffset);
+            spaceOffset++;
             
             gotoNextToken();
         } while (token.type == commasym);
@@ -337,8 +342,7 @@ void parseFactor()
         gotoNextToken();
     }
     // Invalid factor
-    else
-    { errorMessage(27); }
+    else { errorMessage(27); }
 }
 
 // For code generation

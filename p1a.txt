@@ -1,3 +1,4 @@
+const x = 5;
 var x, y, z;
 begin
 /* test assignments */

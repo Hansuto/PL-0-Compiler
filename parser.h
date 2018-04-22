@@ -50,7 +50,7 @@ typedef struct
     int type;
     char name[MAX_IDENTIFIER_LENGTH];
     char symbol[MAX_IDENTIFIER_LENGTH];
-}tokenType;
+} tokenType;
 
 
 int parse(char * file);
