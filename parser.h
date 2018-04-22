@@ -39,9 +39,9 @@ typedef struct
 {
     symbolType type;                        // The type of symbol this is
     char name[MAX_IDENTIFIER_LENGTH];       // name up to 11 characters
-    int value;                                // number (ASCII value)
+    int value;                              // number (ASCII value)
     int level;                              // L level
-    int address;                               // M address
+    int address;                            // M address
 } symbol;
 
 // Token struct

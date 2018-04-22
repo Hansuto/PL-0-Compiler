@@ -22,7 +22,7 @@ int tokenVal = 0;         // tokenArray[]
 int count = 0;            // removeID_Num function
 int relOp = 0;            // condition switch
 int codeIndex = 0;        // code counter emit function
-int symbolTableIndex = 0; // Size of the symbol table
+int symbolTableIndex = 4; // Size of the symbol table
 int spaceOffset = 4;      // startin point for symbol table
 int lexLevel = -1;        // keep track of current lex level--
                           // --increase when enter Block and decrease when exit it
@@ -113,7 +113,7 @@ void parseConstantDeclaration()
             // number expected
             if (token.type != numbersym) { errorMessage(2); }
             
-            // Address doesn't matter for constants
+            // Address doesn't matter for constants, so we can set to 0
             enterSymbol(constType, identifier, atoi(token.symbol), lexLevel, 0);
             
             gotoNextToken();
@@ -142,7 +142,7 @@ int parseVarDeclaration()
             
             // Enters a variable type in the symbol table with value, address of offset.
             // Level is set to lexLevel
-            // NOTE: Address of 0 may not be right?
+            // NOTE: Address is set to to the current offset
             enterSymbol(varType, token.name, 0, lexLevel, spaceOffset);
             spaceOffset++;
             
@@ -280,21 +280,60 @@ void parseRelOp()
     gotoNextToken();
 }
 
-// ["+"|"-"] term { ("+"|"-") term}.
+// ["+"|"-"] term { ("+"|"-") term }.
 void parseExpression()
 {
-    // Plus and Minus
+    // Stores if we should negate or not
+    int shouldNegate = 0;
+    
+    // ["+" | "-"]
     if (token.type == plussym || token.type == minussym)
     {
+        if (token.type == minussym)
+        {
+            shouldNegate = 1;
+        }
+        
         gotoNextToken();
     }
     
     parseTerm();
+    
+    if (shouldNegate)
+    {
+        // Negate the previously emitted code's register
+        // Registers[lastStored] = -Registers[lastScored];
+        emit(NEG, code[codeIndex - 1].R, code[codeIndex - 1].R, 0);
+    }
+    // For code generation, we need to know what value we're adding/subbing
+    int firstTermCodeIndex = codeIndex - 1;
 
     while (token.type == plussym || token.type == minussym)
     {
+        token_type operatorType = token.type;
+        
         gotoNextToken();
         parseTerm();
+        
+        // For code generation, we need to know what value we're adding/subbing
+        int newTermCodeIndex = codeIndex - 1;
+        
+        // For code emission:
+        // Registers[first] = Registers[first] (+ | -) Registers[second];
+        if (operatorType == plussym)
+        {
+            emit(ADD,
+                 code[firstTermCodeIndex].R,
+                 code[firstTermCodeIndex].R,
+                 code[newTermCodeIndex].R);
+        }
+        else if (operatorType == minussym)
+        {
+            emit(SUB,
+                 code[firstTermCodeIndex].R,
+                 code[firstTermCodeIndex].R,
+                 code[newTermCodeIndex].R);
+        }
     }
 }
 
@@ -302,33 +341,69 @@ void parseExpression()
 void parseTerm()
 {
     parseFactor();
-
+    
+    // The index of the register where we just parsed our factor
+    int previousFactorRegister = code[codeIndex - 1].R;
+    
     // Can mult/divide infinite times
     while (token.type == multsym || token.type == slashsym)
     {
+        token_type originalSymbol = token.type;
+        
         gotoNextToken();
         parseFactor();
+        
+        int newestFactorRegister = code[codeIndex - 1].R;
+        
+        // Below emissions can be thought of like this:
+        // Registers[first] = registers[first] ("*" | "/") registers[second];
+        if (originalSymbol == multsym)
+        {
+            emit(MUL, previousFactorRegister, previousFactorRegister, newestFactorRegister);
+        }
+        else if (originalSymbol == slashsym)
+        {
+            emit(DIV, previousFactorRegister, previousFactorRegister, newestFactorRegister);
+        }
     }
 }
 
-// ident | number| "(" expression")“.
+// ident | number | "(" expression")“.
 void parseFactor()
 {
     if (token.type == identsym)
     {
-        /*
-         i= find(ident);
-         if i == 0 then ERROR();
-         
-         if symboltype(i) == variable then gen(LOD, symbollevel(i), symboladdress(i));
-         else if symboltype(i) == constant then gen(LIT, 0, symbolval(i));
-         else ERROR();GET_TOKEN();
-         */
+        int symbolIndex = findSymbolIndexWithName(token.name);
+        
+        if (symbolIndex == -1)
+        {
+            // Undeclared identifier
+            errorMessage(11);
+        }
+        else if (symbolTable[symbolIndex].type == varType)
+        {
+            // Load the value from the symbol table
+            // TODO: This register (0) needs to be redone to allow for multiple variables.
+            // Registers[0] = stack[base(level, bp) + address];
+            emit(LOD, 0, symbolTable[symbolIndex].level, symbolTable[symbolIndex].address);
+        }
+        else if (symbolTable[symbolIndex].type == constType)
+        {
+            // Load the value from the constant symbol table
+            // TODO: This register (0) needs to be redone to allow for multiple variables.
+            // Registers[0] = constValue;
+            emit(LIT, 0, 0, symbolTable[symbolIndex].value);
+        }
+        else { errorMessage(100); } // TODO: Make a better error for this
         
         gotoNextToken();
     }
     else if (token.type == numbersym)
     {
+        // TODO: The register (0) needs to be redone to allow for multiple variables
+        // Registers[0] = value;
+        emit(LIT, 0, 0, atoi(token.symbol));
+        
         gotoNextToken();
     }
     else if (token.type == lparentsym)
