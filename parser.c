@@ -171,11 +171,17 @@ void parseStatement()
     // [ident ":=" expression ]
     if (token.type == identsym)
     {
-        /*
-         i= find(ident);
-         if i== 0 then ERROR (“Undeclared identifier”);
-         if symboltype(i) != variable then ERROR (“Assignment to constant or procedure is not allowed”);
-         */
+        int identifierIndex = findSymbolIndexWithName(token.name);
+        
+        if (identifierIndex == -1)
+        {
+            errorMessage(11); // Undeclared identifier;
+        }
+        else if (symbolTable[identifierIndex].type != varType)
+        {
+            // Assignment to constant or procedure is not allowed
+            errorMessage(12);
+        }
         
         gotoNextToken();
         // ":=" expected
@@ -184,7 +190,11 @@ void parseStatement()
         gotoNextToken();
         parseExpression();
         
-        // gen(STO, symbollevel(i), symboladdress(i));
+        // stack[base(ILvl, BP) + Add] = Registers[previousExpression.R];
+        emit(STO,
+             0,
+             symbolTable[identifierIndex].level,
+             symbolTable[identifierIndex].address);
     }
     
     // [ "begin" statement{ ";" statement} "end" ]
@@ -210,11 +220,14 @@ void parseStatement()
     {
         gotoNextToken();
         parseCondition();
-
+        
         // Then expected
         if (token.type != thensym) { errorMessage(16); }
 
         gotoNextToken();
+        
+        // todo: EMIT
+        
         parseStatement();
     }
     
@@ -223,11 +236,15 @@ void parseStatement()
     {
         gotoNextToken();
         parseCondition();
+        
+        // TODO: Emit
 
         if (token.type != dosym) { errorMessage(18); }
 
         gotoNextToken();
         parseStatement();
+        
+        // TODO: Emit
     }
     
     // [ "read" ident ]
@@ -235,6 +252,10 @@ void parseStatement()
     {
         gotoNextToken();
         if (token.type != identsym) { errorMessage(14); }
+        
+        // Scan in
+        // Registers[0] = scan_from_file_int
+        emit(SIO, 0, lexLevel, 2);
         
         gotoNextToken();
     }
@@ -246,6 +267,9 @@ void parseStatement()
         // Identifier expected
         if (token.type != identsym) { errorMessage(14); }
 
+        // printf(Registers[0])
+        emit(SIO, 0, 0, 1);
+        
 		gotoNextToken();
     }
 }
