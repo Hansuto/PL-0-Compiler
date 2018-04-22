@@ -236,17 +236,25 @@ void parseStatement()
     // [ "while" condition "do" statement ]
     else if (token.type == whilesym)
     {
+        // The position where the while first starts
+        int whileStartIndex = codeIndex;
+        
         gotoNextToken();
         parseCondition();
         
-        // TODO: Emit
+        // The code which will trigger our exit of the while
+        // if (Registers[0] == 0) { PC = M; }
+        int exitWhileJPCIndex = emit(JPC, 0, 0, 0);
 
         if (token.type != dosym) { errorMessage(18); }
 
         gotoNextToken();
         parseStatement();
         
-        // TODO: Emit
+        // PC = whileStartIndex;
+        emit(JMP, 0, 0, whileStartIndex);
+        
+        code[exitWhileJPCIndex].M = codeIndex;
     }
     
     // [ "read" ident ]
