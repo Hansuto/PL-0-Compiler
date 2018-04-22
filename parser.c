@@ -87,8 +87,6 @@ void parseBlock()
     
     parseStatement();
     
-    emit(SIO, 0, lexLevel, 1);
-    
     lexLevel--;
 }
 
@@ -267,6 +265,9 @@ void parseStatement()
         // Identifier expected
         if (token.type != identsym) { errorMessage(14); }
 
+        int identifierIndex = findSymbolIndexWithName(token.name);
+        
+        emit(LOD, 0, lexLevel, identifierIndex);
         // printf(Registers[0])
         emit(SIO, 0, 0, 1);
         
