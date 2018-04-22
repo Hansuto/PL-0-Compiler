@@ -39,7 +39,7 @@ void parseConstantDeclaration();
 int  parseVarDeclaration();
 void parseStatement();
 void parseCondition();
-void parseRelOp();
+OP   parseRelOp();
 void parseExpression();
 void parseTerm();
 void parseFactor();
@@ -224,9 +224,13 @@ void parseStatement()
 
         gotoNextToken();
         
-        // todo: EMIT
+        // if (Registers[L] == 0) { PC = M; }
+        int jumpCodeIndex = emit(JPC, 0, 0, codeIndex);
         
         parseStatement();
+        
+        // Jumps to after the statement if false
+        code[jumpCodeIndex].M = codeIndex;
     }
     
     // [ "while" condition "do" statement ]
@@ -285,24 +289,61 @@ void parseCondition()
     {
         gotoNextToken();
         parseExpression();
+        
+        // Registers[previous] = Registers[previous] % 2
+        emit(ODD, code[codeIndex - 1].R, 0, 0);
     }
     else
     {
         parseExpression();
-
-        parseRelOp();
+        
+        // TODO: This should handle more than one variable
+        // Registers[0] = stack[base(0, BP) + M];
+        
+        OP relationOp = parseRelOp();
         
         parseExpression();
+        // TODO: This should handle more than one variable
+        // Registers[0] = stack[base(0, BP) + M];
+        
+        // Registers[0] = Registers[0] (op) Registers[0];
+        emit(relationOp, 0, 0, 0);
     }
 }
 
 // "="|“<>"|"<"|"<="|">"|">=“
-void parseRelOp()
+// Returns: the relation op we have to perform
+OP parseRelOp()
 {
-    // Symbol expected
-    if ((token.type != eqlsym) && (token.type != neqsym) && (token.type != lessym) &&
-        (token.type != leqsym) && (token.type != gtrsym) && (token.type != geqsym)) { errorMessage(20); }
+    OP returnValue = 0;
+    
+    switch (token.type)
+    {
+        case eqlsym:
+            returnValue = EQL;
+            break;
+        case neqsym:
+            returnValue = NEQ;
+            break;
+        case lessym:
+            returnValue = LSS;
+            break;
+        case leqsym:
+            returnValue = LEQ;
+            break;
+        case gtrsym:
+            returnValue = GTR;
+            break;
+        case geqsym:
+            returnValue = GEQ;
+            break;
+        default:
+            errorMessage(20);
+            break;
+    }
     gotoNextToken();
+    
+    return returnValue;
 }
 
 // ["+"|"-"] term { ("+"|"-") term }.
