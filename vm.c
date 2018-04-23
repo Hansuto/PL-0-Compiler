@@ -43,28 +43,28 @@ int activationRecordList[MAX_STACK_HEIGHT];
 char *
     const OP_CODES[] = {
         " ",
-        "LIT",
-        "RTN",
-        "LOD",
-        "STO",
-        "CAL",
-        "INC",
-        "JMP",
-        "JPC",
-        "SIO",
-        "NEG",
-        "ADD",
-        "SUB",
-        "MUL",
-        "DIV",
-        "ODD",
-        "MOD",
-        "EQL",
-        "NEQ",
-        "LSS",
-        "LEQ",
-        "GTR",
-        "GEQ"
+        "lit",
+        "rtn",
+        "lod",
+        "sto",
+        "cal",
+        "inc",
+        "jmp",
+        "jpc",
+        "sio",
+        "neg",
+        "add",
+        "sub",
+        "mul",
+        "div",
+        "odd",
+        "mod",
+        "eql",
+        "neq",
+        "lss",
+        "leq",
+        "gtr",
+        "geq"
     };
 
 // All instructions we have to do
@@ -79,7 +79,7 @@ void fetchCycle();
 void executeCycle();
 
 int vm(char * file) {
-    int i, j, numInstructions;
+    int i, j, k = 0, numInstructions;
     numInstructions = processInputFile(file);
     halt = 0;
 
@@ -92,13 +92,18 @@ int vm(char * file) {
         printf("%d\n", instructions[i].M);
     }
 
+    printf("\n-------------------------------------------\n");
+    printf("VIRTUAL MACHINE TRACE:\n");
+    printf("Initial Values:\n");
+    printf("PC\tBP\tSP\tStack\n");
+    printf("0	1	0	0\n");
+    printf("\nStack Trace:");
 
-    printf("\n OP   Rg Lx Vl[ PC BP SP]\n");
+    printf("\n\t\tR\tL\tM\tPC\tBP\tSP\tStack\n");
     while (!halt) {
         fetchCycle();
         executeCycle();
-
-        printf("%-4s%3d%3d%3d[%3d%3d%3d] ",
+        printf("\t%-4s\t%d\t%d\t%d\t%d\t%d\t%d\t",
             OP_CODES[IR.OP],
             IR.R,
             IR.L,
@@ -110,14 +115,15 @@ int vm(char * file) {
         printStack(SP, BP, stack, lexx);
         printf("\n");
 
-        printf("\tRegisters:[");
+        printf("RF:");
         for (j = 0; j < NUM_REGISTERS; j++)
-            printf("%3d", registers[j]);
-        printf("]\n");
+            printf("%d ", registers[j]);
+        printf("\n");
         if (halt)
             break;
     }
 
+    printf("\nFinished execution. Exiting...\n");
     return 0;
 }
 
@@ -134,7 +140,7 @@ void printStack(int sp, int bp, int * stack, int lexx) {
     }
     //Print the stack contents - at the current level
     for (i = bp; i <= sp; i++) {
-        printf("%3d ", stack[i]);
+        printf("%d ", stack[i]);
     }
 }
 
@@ -218,7 +224,7 @@ void executeCycle() {
         break;
     case 9: // SIO
         if (IR.M == 1)
-            printf("%d\n", registers[IR.R]);
+            printf("OUTPUT: %d\n", registers[IR.R]);
         else if (IR.M == 2)
             scanf("%d", & registers[IR.R]);
         else if (IR.M == 3)
