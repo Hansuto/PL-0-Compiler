@@ -6,7 +6,7 @@ McAlpin
 Chris Perkins    - ch289391
 Chris Taliaferro - ch119541
 */
-#include "stdafx.h"
+//#include "stdafx.h" <-- to run in visual studio
 #include "parser.h"
 #include "state.h"
 
