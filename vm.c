@@ -29,7 +29,7 @@ instruction;
 int SP = 0;
 int BP = 1;
 int PC = 0;
-int lex = 0;
+int lexx = 0;
 instruction IR;
 
 //Handles halt conditions.
@@ -71,7 +71,7 @@ char *
 instruction instructions[MAX_CODE_LENGTH];
 int registers[NUM_REGISTERS];
 
-void printStack(int sp, int bp, int * stack, int lex);
+void printStack(int sp, int bp, int * stack, int lexx);
 int isActivationRecord(int index);
 int processInputFile(char * filename);
 int base(int L, int B);
@@ -107,7 +107,7 @@ int vm(char * file) {
             BP,
             SP);
 
-        printStack(SP, BP, stack, lex);
+        printStack(SP, BP, stack, lexx);
         printf("\n");
 
         printf("\tRegisters:[");
@@ -121,15 +121,15 @@ int vm(char * file) {
     return 0;
 }
 
-void printStack(int sp, int bp, int * stack, int lex) {
+void printStack(int sp, int bp, int * stack, int lexx) {
     int i;
     if (bp == 1) {
-        if (lex > 0) {
+        if (lexx > 0) {
             printf("|");
         }
     } else {
         //Print the lesser lexical level
-        printStack(bp - 1, stack[bp + 2], stack, lex - 1);
+        printStack(bp - 1, stack[bp + 2], stack, lexx - 1);
         printf("|");
     }
     //Print the stack contents - at the current level
@@ -185,7 +185,7 @@ void executeCycle() {
         BP = stack[SP + 3];
         PC = stack[SP + 4];
 
-        lex--;
+        lexx--;
         break;
     case 3: // LOD
         registers[IR.R] = stack[base(IR.L, BP) + IR.M];
@@ -203,7 +203,7 @@ void executeCycle() {
         PC = IR.M;
         SP += 4;
 
-        lex++;
+        lexx++;
         break;
     case 6: // INC
         SP += IR.M;
