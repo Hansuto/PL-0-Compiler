@@ -39,7 +39,7 @@ typedef struct
 {
     symbolType type;                        // The type of symbol this is
     char name[MAX_IDENTIFIER_LENGTH];       // name up to 11 characters
-    int value;                              // number (ASCII value)
+    char value[MAX_IDENTIFIER_LENGTH];
     int level;                              // L level
     int address;                            // M address
 } symbol;
