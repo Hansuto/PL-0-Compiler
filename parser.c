@@ -280,7 +280,7 @@ void parseStatement()
 
         int identifierIndex = findSymbolIndexWithName(token.symbol);
         
-        emit(LOD, currentRegister, lexLevel, identifierIndex - 1);
+        emit(LOD, currentRegister, lexLevel, symbolTable[identifierIndex].address);
         // printf(Registers[curReg])
         emit(SIO, currentRegister, 0, 1);
         
@@ -306,17 +306,20 @@ void parseCondition()
     {
         parseExpression();
         
-        // TODO: This should handle more than one variable
-        // Registers[0] = stack[base(0, BP) + M];
+        // We just parsed an expression; need to parse through another.
+        currentRegister++;
+        int initialRegister = code[codeIndex - 1].R;
         
         OP relationOp = parseRelOp();
         
         parseExpression();
-        // TODO: This should handle more than one variable
-        // Registers[0] = stack[base(0, BP) + M];
+        int secondRegister = code[codeIndex - 1].R;
         
-        // Registers[0] = Registers[0] (op) Registers[0];
-        emit(relationOp, 0, 0, 0);
+        // Registers[initial] = Registers[initial] (op) Registers[second];
+        emit(relationOp, initialRegister, initialRegister, secondRegister);
+        
+        // We're done using the initial register (and the second, matter of-fact).
+        currentRegister--;
     }
 }
 
