@@ -26,6 +26,7 @@ int symbolTableIndex = 4; // Size of the symbol table
 int spaceOffset = 4;      // startin point for symbol table
 int lexLevel = -1;        // keep track of current lex level--
                           // --increase when enter Block and decrease when exit it
+int currentRegister = 0;  // The current register we're saving/loading to
 
 FILE *inputFile;
 FILE *outputFile;
@@ -47,7 +48,6 @@ void parseFactor();
 int emit(OP op, int r, int l, int m);
 int enterSymbol(symbolType type, char *name, char *value, int level, int address);
 int findSymbolIndexWithName(char* identifier);
-int currentRegister = 0;
 
 void gotoNextToken();
 void errorMessage();
@@ -191,7 +191,7 @@ void parseStatement()
         
         // stack[base(ILvl, BP) + Add] = Registers[previousExpression.R];
         emit(STO,
-             0,
+             currentRegister,
              symbolTable[identifierIndex].level,
              symbolTable[identifierIndex].address);
     }
@@ -226,7 +226,7 @@ void parseStatement()
         gotoNextToken();
         
         // if (Registers[L] == 0) { PC = M; }
-        int jumpCodeIndex = emit(JPC, 0, 0, codeIndex);
+        int jumpCodeIndex = emit(JPC, currentRegister, 0, codeIndex);
         
         parseStatement();
         
@@ -245,7 +245,7 @@ void parseStatement()
         
         // The code which will trigger our exit of the while
         // if (Registers[0] == 0) { PC = M; }
-        int exitWhileJPCIndex = emit(JPC, 0, 0, 0);
+        int exitWhileJPCIndex = emit(JPC, currentRegister, 0, 0);
 
         if (token.type != dosym) { errorMessage(18); }
 
@@ -253,7 +253,7 @@ void parseStatement()
         parseStatement();
         
         // PC = whileStartIndex;
-        emit(JMP, 0, 0, whileStartIndex);
+        emit(JMP, currentRegister, 0, whileStartIndex);
         
         code[exitWhileJPCIndex].M = codeIndex;
     }
@@ -266,7 +266,7 @@ void parseStatement()
         
         // Scan in
         // Registers[0] = scan_from_file_int
-        emit(SIO, 0, lexLevel, 2);
+        emit(SIO, currentRegister, lexLevel, 2);
         
         gotoNextToken();
     }
@@ -279,9 +279,10 @@ void parseStatement()
         if (token.type != identsym) { errorMessage(14); }
 
         int identifierIndex = findSymbolIndexWithName(token.symbol);
-        emit(LOD, 0, lexLevel, identifierIndex);
-        // printf(Registers[0])
-        emit(SIO, 0, 0, 1);
+        
+        emit(LOD, currentRegister, lexLevel, identifierIndex - 1);
+        // printf(Registers[curReg])
+        emit(SIO, currentRegister, 0, 1);
         
 		gotoNextToken();
     }
@@ -381,6 +382,8 @@ void parseExpression()
     }
     // For code generation, we need to know what value we're adding/subbing
     int firstTermCodeIndex = codeIndex - 1;
+    // We're about to parse another item; increment register value
+    currentRegister++;
 
     while (token.type == plussym || token.type == minussym)
     {
@@ -388,6 +391,7 @@ void parseExpression()
         
         gotoNextToken();
         parseTerm();
+        currentRegister++;
         
         // For code generation, we need to know what value we're adding/subbing
         int newTermCodeIndex = codeIndex - 1;
@@ -408,13 +412,21 @@ void parseExpression()
                  code[firstTermCodeIndex].R,
                  code[newTermCodeIndex].R);
         }
+        
+        // We just used the second register and won't need it again; decrement register.
+        currentRegister--;
     }
+    
+    // We're done with the initial register and won't need it again; decrement register.
+    currentRegister--;
 }
 
 // factor {("*"|"/") factor}
 void parseTerm()
 {
     parseFactor();
+    
+    currentRegister++;
     
     // The index of the register where we just parsed our factor
     int previousFactorRegister = code[codeIndex - 1].R;
@@ -426,6 +438,8 @@ void parseTerm()
         
         gotoNextToken();
         parseFactor();
+        
+        currentRegister++;
         
         int newestFactorRegister = code[codeIndex - 1].R;
         
@@ -439,7 +453,11 @@ void parseTerm()
         {
             emit(DIV, previousFactorRegister, previousFactorRegister, newestFactorRegister);
         }
+        
+        currentRegister--;
     }
+    
+    currentRegister--;
 }
 
 // ident | number | "(" expression")“.
@@ -457,16 +475,14 @@ void parseFactor()
         else if (symbolTable[symbolIndex].type == varType)
         {
             // Load the value from the symbol table
-            // TODO: This register (0) needs to be redone to allow for multiple variables.
-            // Registers[0] = stack[base(level, bp) + address];
-            emit(LOD, 0, symbolTable[symbolIndex].level, symbolTable[symbolIndex].address);
+            // Registers[curReg] = stack[base(level, bp) + address];
+            emit(LOD, currentRegister, symbolTable[symbolIndex].level, symbolTable[symbolIndex].address);
         }
         else if (symbolTable[symbolIndex].type == constType)
         {
             // Load the value from the constant symbol table
-            // TODO: This register (0) needs to be redone to allow for multiple variables.
-            // Registers[0] = constValue;
-            emit(LIT, 0, 0, symbolTable[symbolIndex].value);
+            // Registers[curReg] = constValue;
+            emit(LIT, currentRegister, 0, atoi(symbolTable[symbolIndex].value));
         }
         else { errorMessage(100); } // TODO: Make a better error for this
         
@@ -474,9 +490,8 @@ void parseFactor()
     }
     else if (token.type == numbersym)
     {
-        // TODO: The register (0) needs to be redone to allow for multiple variables
-        // Registers[0] = value;
-        emit(LIT, 0, 0, atoi(token.symbol));
+        // Registers[curReg] = value;
+        emit(LIT, currentRegister, 0, atoi(token.symbol));
         
         gotoNextToken();
     }

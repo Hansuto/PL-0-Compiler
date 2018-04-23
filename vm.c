@@ -38,7 +38,7 @@ int activationRecordList[MAX_STACK_HEIGHT];
 int activationRecordTracker = 0;
 
 // The corresponding OP or Operation given the OP/M as index
-char *const OP_CODES[] = {" ","LIT","RTN","LOD","STO","CAL","INC","JMP","JPC","SIO", "NEG","ADD","SUB","MUL","DIV","ODD","MOD","EQL","NEQ","LSS","LEQ","GTR","GEQ"};
+char *const OP_CODES[] = {" ","lit","rtn","lod","sto","cal","inc","jmp","jpc","sio", "neg","add","sub","mul","div","odd","mod","eql","neq","lss","leq","gtr","geq"};
 
 
 // All instructions we have to do
@@ -59,7 +59,7 @@ int vm(char * file)
 
     printf("GENERATED INTERMEDIATE CODE:\n");
     for (i = 0; i < numInstructions; i++) {
-        printf("%d ", i);
+        printf("%3d ", i);
         printf("%s ",OP_CODES[instructions[i].OP]);
         printf("%d ", instructions[i].R);
         printf("%d ", instructions[i].L);
