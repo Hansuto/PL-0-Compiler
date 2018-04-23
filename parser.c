@@ -6,7 +6,7 @@ McAlpin
 Chris Perkins    - ch289391
 Chris Taliaferro - ch119541
 */
-
+#include "stdafx.h"
 #include "parser.h"
 #include "state.h"
 
@@ -47,6 +47,7 @@ void parseFactor();
 int emit(OP op, int r, int l, int m);
 int enterSymbol(symbolType type, char *name, int value, int level, int address);
 int findSymbolIndexWithName(char* identifier);
+int currentRegister = 0;
 
 void gotoNextToken();
 void errorMessage();
@@ -141,7 +142,7 @@ int parseVarDeclaration()
             // Enters a variable type in the symbol table with value, address of offset.
             // Level is set to lexLevel
             // NOTE: Address is set to to the current offset
-            enterSymbol(varType, token.name, 0, lexLevel, spaceOffset);
+            enterSymbol(varType, token.name, token.symbol, lexLevel, spaceOffset);
             spaceOffset++;
             
             gotoNextToken();
@@ -169,7 +170,7 @@ void parseStatement()
     // [ident ":=" expression ]
     if (token.type == identsym)
     {
-        int identifierIndex = findSymbolIndexWithName(token.name);
+        int identifierIndex = findSymbolIndexWithName(token.symbol);
         
         if (identifierIndex == -1)
         {
@@ -277,8 +278,7 @@ void parseStatement()
         // Identifier expected
         if (token.type != identsym) { errorMessage(14); }
 
-        int identifierIndex = findSymbolIndexWithName(token.name);
-        
+        int identifierIndex = findSymbolIndexWithName(token.symbol);
         emit(LOD, 0, lexLevel, identifierIndex);
         // printf(Registers[0])
         emit(SIO, 0, 0, 1);
@@ -447,7 +447,7 @@ void parseFactor()
 {
     if (token.type == identsym)
     {
-        int symbolIndex = findSymbolIndexWithName(token.name);
+        int symbolIndex = findSymbolIndexWithName(token.symbol);
         
         if (symbolIndex == -1)
         {
@@ -511,13 +511,13 @@ int emit(OP op, int r, int l, int m)
 
 // Enters in a symbol with the given information to the symbol table
 // Returns the address of the symbol
-int enterSymbol(symbolType type, char *name, int value, int level, int address)
+int enterSymbol(symbolType type, char *name, char *value, int level, int address)
 {
     if (symbolTableIndex == MAX_SYMBOL_TABLE_SIZE) { errorMessage(2); }
     
     symbolTable[symbolTableIndex].type = type;
     strcpy(symbolTable[symbolTableIndex].name, name);
-    symbolTable[symbolTableIndex].value = value;
+    strcpy(symbolTable[symbolTableIndex].value, value);
     symbolTable[symbolTableIndex].level = level;
     symbolTable[symbolTableIndex].address = address;
     
@@ -530,14 +530,9 @@ int enterSymbol(symbolType type, char *name, int value, int level, int address)
 int findSymbolIndexWithName(char* identifier)
 {
     int index;
-    for(index = symbolTableIndex - 1; index >= 0 ; index--)
-    {
-        if (strcmp(symbolTable[index].name, identifier)==0)
-        {
+    for(index = symbolTableIndex - 1; index >= 0 ; index--) //CULPRIT
+        if (strcmp(symbolTable[index].value, identifier) == 0)
             return index;
-        }
-    }
-    
     return -1;
 }
 
