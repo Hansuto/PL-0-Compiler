@@ -45,7 +45,7 @@ void parseTerm();
 void parseFactor();
 
 int emit(OP op, int r, int l, int m);
-int enterSymbol(symbolType type, char *name, int value, int level, int address);
+int enterSymbol(symbolType type, char *name, char *value, int level, int address);
 int findSymbolIndexWithName(char* identifier);
 int currentRegister = 0;
 
@@ -113,7 +113,7 @@ void parseConstantDeclaration()
             if (token.type != numbersym) { errorMessage(2); }
             
             // Address doesn't matter for constants, so we can set to 0
-            enterSymbol(constType, identifier, atoi(token.symbol), lexLevel, 0);
+            enterSymbol(constType, identifier, token.symbol, lexLevel, 0);
             
             gotoNextToken();
         } while (token.type == commasym);
