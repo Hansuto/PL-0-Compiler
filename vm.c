@@ -78,11 +78,11 @@ int base(int L, int B);
 void fetchCycle();
 void executeCycle();
 
-int vm(char * file) {
+int vm(char * file, int flag) {
     int i, j, k = 0, numInstructions;
     numInstructions = processInputFile(file);
     halt = 0;
-
+    
     printf("GENERATED INTERMEDIATE CODE:\n");
     for (i = 0; i < numInstructions; i++) {
         printf("%d ", i);
@@ -91,39 +91,45 @@ int vm(char * file) {
         printf("%d ", instructions[i].L);
         printf("%d\n", instructions[i].M);
     }
+    if(flag == 1){
+        printf("\n-------------------------------------------\n");
+        printf("VIRTUAL MACHINE TRACE:\n");
+        printf("Initial Values:\n");
+        printf("PC\tBP\tSP\tStack\n");
+        printf("0	1	0	0\n");
+        printf("\nStack Trace:");
+        printf("\n\t\tR\tL\tM\tPC\tBP\tSP\tStack\n");
+    }
+    else{
+        printf("\n-------------------------------------------\n");
+        printf("PROGRAM INPUT/OUTPUT:\n");
+    }
 
-    printf("\n-------------------------------------------\n");
-    printf("VIRTUAL MACHINE TRACE:\n");
-    printf("Initial Values:\n");
-    printf("PC\tBP\tSP\tStack\n");
-    printf("0	1	0	0\n");
-    printf("\nStack Trace:");
-
-    printf("\n\t\tR\tL\tM\tPC\tBP\tSP\tStack\n");
     while (!halt) {
         fetchCycle();
         executeCycle();
-        printf("\t%-4s\t%d\t%d\t%d\t%d\t%d\t%d\t",
-            OP_CODES[IR.OP],
-            IR.R,
-            IR.L,
-            IR.M,
-            PC,
-            BP,
-            SP);
+        if(flag == 1){
+            printf("\t%-4s\t%d\t%d\t%d\t%d\t%d\t%d\t",
+                OP_CODES[IR.OP],
+                IR.R,
+                IR.L,
+                IR.M,
+                PC,
+                BP,
+                SP);
 
-        printStack(SP, BP, stack, lexx);
-        printf("\n");
+            printStack(SP, BP, stack, lexx);
+            printf("\n");
 
-        printf("RF:");
-        for (j = 0; j < NUM_REGISTERS; j++)
-            printf("%d ", registers[j]);
-        printf("\n");
+            printf("RF:");
+            for (j = 0; j < NUM_REGISTERS; j++)
+                printf("%d ", registers[j]);
+            printf("\n");
+        }
         if (halt)
             break;
     }
 
-    printf("\nFinished execution. Exiting...\n");
     return 0;
 }
 

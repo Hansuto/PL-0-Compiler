@@ -36,8 +36,10 @@ int main(int argc, char* argv[])
         lexer(inputFile);
     if (parserFlag)
         parse("lexoutput.txt");
-    if (vmFlag)
-        vm("parseOutput.txt");
+
+    vm("parseOutput.txt", vmFlag);
+    
+    printf("\nFinished execution. Exiting...\n");
 
     return 0;
 }
