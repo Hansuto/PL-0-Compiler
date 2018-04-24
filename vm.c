@@ -34,6 +34,8 @@ instruction IR;
 
 //Handles halt conditions.
 int halt;
+int prePC;
+
 
 // Stack automatically initialized to all 0s
 int stack[MAX_STACK_HEIGHT];
@@ -107,9 +109,11 @@ int vm(char * file, int flag) {
 
     while (!halt) {
         fetchCycle();
+        prePC = PC + 1;
         executeCycle();
         if(flag == 1){
-            printf("\t%-4s\t%d\t%d\t%d\t%d\t%d\t%d\t",
+            printf("%d\t%-4s\t%d\t%d\t%d\t%d\t%d\t%d\t",
+                prePC,
                 OP_CODES[IR.OP],
                 IR.R,
                 IR.L,
