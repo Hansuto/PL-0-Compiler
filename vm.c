@@ -12,7 +12,6 @@ Chris Taliaferro - ch119541
 #include "vm.h"
 #include "state.h"
 
-#define NUM_REGISTERS 8
 #define MAX_LEXI_LEVELS 3
 #define MAX_CODE_LENGTH 500
 #define MAX_STACK_HEIGHT 2000
@@ -31,6 +30,7 @@ int BP = 1;
 int PC = 0;
 int lexx = 0;
 instruction IR;
+int numInstructions = 0;
 
 //Handles halt conditions.
 int halt;
@@ -81,13 +81,13 @@ void fetchCycle();
 void executeCycle();
 
 int vm(char * file, int flag) {
-    int i, j, k = 0, numInstructions;
+    int i, j, k = 0;
     numInstructions = processInputFile(file);
     halt = 0;
     
     printf("GENERATED INTERMEDIATE CODE:\n");
     for (i = 0; i < numInstructions; i++) {
-        printf("%d ", i);
+        printf("%3d ", i);
         printf("%s ", OP_CODES[instructions[i].OP]);
         printf("%d ", instructions[i].R);
         printf("%d ", instructions[i].L);
@@ -108,10 +108,10 @@ int vm(char * file, int flag) {
     }
 
     while (!halt) {
+        prePC = PC;
         fetchCycle();
-        prePC = PC + 1;
         executeCycle();
-        if(flag == 1){
+        if(flag == 1) {
             printf("%d\t%-4s\t%d\t%d\t%d\t%d\t%d\t%d\t",
                 prePC,
                 OP_CODES[IR.OP],
@@ -125,13 +125,12 @@ int vm(char * file, int flag) {
             printStack(SP, BP, stack, lexx);
             printf("\n");
 
-            printf("RF:");
+            printf("RF: ");
             for (j = 0; j < NUM_REGISTERS; j++)
                 printf("%d ", registers[j]);
             printf("\n");
         }
-        if (halt)
-            break;
+        
     }
 
     return 0;
@@ -139,13 +138,17 @@ int vm(char * file, int flag) {
 
 void printStack(int sp, int bp, int * stack, int lexx) {
     int i;
-    if (bp == 1) {
+    
+    if (sp == 0) {
+        printf("%d", stack[bp]);
+        return;
+    } else if (bp == 1) {
         if (lexx > 0) {
             printf("|");
         }
     } else {
         //Print the lesser lexical level
-        printStack(bp - 1, stack[bp + 2], stack, lexx - 1);
+        printStack(sp - 1, stack[bp + 2], stack, lexx - 1);
         printf("|");
     }
     //Print the stack contents - at the current level
@@ -188,7 +191,7 @@ int processInputFile(char * filename) {
 }
 
 void fetchCycle() {
-    IR = instructions[PC++];
+    IR = instructions[PC++ % numInstructions];
 }
 
 void executeCycle() {
@@ -237,8 +240,11 @@ void executeCycle() {
             printf("OUTPUT: %d\n", registers[IR.R]);
         else if (IR.M == 2)
             scanf("%d", & registers[IR.R]);
-        else if (IR.M == 3)
+        else if (IR.M == 3) {
+            SP = 0;
+            PC = 0;
             halt = 1;
+        }
         break;
     case 10: // NEG
         registers[IR.R] = -registers[IR.L];

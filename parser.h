@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "state.h"
+#include "vm.h"
 
 // Constant values
 #define MAX_STACK_HEIGHT 2000

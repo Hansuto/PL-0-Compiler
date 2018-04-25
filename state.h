@@ -38,7 +38,7 @@ typedef enum {
     multsym = 6,
     slashsym = 7,
     oddsym = 8,
-    eqlsym = 9,
+    eqsym = 9,
     neqsym = 10,
     lessym = 11,
     leqsym = 12,

@@ -66,7 +66,7 @@ const char *symbolRep[ ] = {
     "multsym",
     "slashsym",
     "oddsym",
-    "eqlsym",
+    "eqsym",
     "neqsym",
     "lessym",
     "leqsym",
@@ -236,7 +236,7 @@ void performLexAnalysis(char code[]) {
     ssym['/'] = slashsym;
     ssym['('] = lparentsym;
     ssym[')'] = rparentsym;
-    ssym['='] = eqlsym;
+    ssym['='] = eqsym;
     ssym[','] = commasym;
     ssym['.'] = periodsym;
     ssym['#'] = neqsym;
@@ -393,7 +393,7 @@ void performLexAnalysis(char code[]) {
             case plussym:
             case minussym:
             case multsym:
-            case eqlsym:
+            case eqsym:
             case neqsym:
             case leqsym:
             case geqsym:

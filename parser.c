@@ -50,6 +50,7 @@ int enterSymbol(symbolType type, char *name, char *value, int level, int address
 int findSymbolIndexWithName(char* identifier);
 
 void gotoNextToken();
+void checkIfRegistersOutOfBounds();
 void errorMessage();
 void convert();
 void getTokenType(char*, int);
@@ -106,7 +107,7 @@ void parseConstantDeclaration()
 
             gotoNextToken();
             // "=" expected
-            if (token.type != eqlsym) { errorMessage(3); }
+            if (token.type != eqsym) { errorMessage(3); }
             
             gotoNextToken();
             // number expected
@@ -280,6 +281,7 @@ void parseStatement()
 
         int identifierIndex = findSymbolIndexWithName(token.symbol);
         
+        checkIfRegistersOutOfBounds();
         emit(LOD, currentRegister, lexLevel, symbolTable[identifierIndex].address);
         // printf(Registers[curReg])
         emit(SIO, currentRegister, 0, 1);
@@ -331,7 +333,7 @@ OP parseRelOp()
     
     switch (token.type)
     {
-        case eqlsym:
+        case eqsym:
             returnValue = EQL;
             break;
         case neqsym:
@@ -479,6 +481,7 @@ void parseFactor()
         {
             // Load the value from the symbol table
             // Registers[curReg] = stack[base(level, bp) + address];
+            checkIfRegistersOutOfBounds();
             emit(LOD, currentRegister, symbolTable[symbolIndex].level, symbolTable[symbolIndex].address);
         }
         else if (symbolTable[symbolIndex].type == constType)
@@ -552,6 +555,13 @@ int findSymbolIndexWithName(char* identifier)
         if (strcmp(symbolTable[index].value, identifier) == 0)
             return index;
     return -1;
+}
+
+void checkIfRegistersOutOfBounds()
+{
+    if (currentRegister >= 8) {
+        errorMessage(32);
+    }
 }
 
 //Error messages for the PL/0 Parser
@@ -686,6 +696,9 @@ void errorMessage(int error)
             printf("Symbol table size went over maximum number of symbols");
             fprintf(errorFile, "Error. Too many symbols generated.");
             break;
+        case 32:
+            printf("Too many registers are required to produce the required program.");
+            fprintf(errorFile, "Error. Too many registers required.");
         default:
             printf("General Error. Need to make an error message for this.\n");
             fprintf(errorFile, "General Error. Need to make an error message for this.\n");
@@ -751,8 +764,8 @@ void getTokenType(char *name, int count)
         tokens[count].type = slashsym;
     else if (strcmp(name, "oddsym") == 0)
         tokens[count].type = oddsym;
-    else if (strcmp(name, "eqlsym") == 0)
-        tokens[count].type = eqlsym;
+    else if (strcmp(name, "eqsym") == 0)
+        tokens[count].type = eqsym;
     else if (strcmp(name, "neqsym") == 0)
         tokens[count].type = neqsym;
     else if (strcmp(name, "lessym") == 0)
