@@ -1,4 +1,4 @@
-# Program-3
+# PL/0 Compiler
 
 COMPILATION COMMANDS
 ---------------------
