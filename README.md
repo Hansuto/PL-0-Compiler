@@ -24,3 +24,5 @@ input format for VM example:
 09 00 00 03
 
 *UPDATE* 4.18.18 - Parser (.c & .h) has been created. Also created a state.h due to both the parser and lexer needing the state values; avoiding multiple definitions. The parser is not generating the correct code currently. 
+
+*UPDATE* 5.2.18 - Working Properly
